@@ -66,6 +66,7 @@
   .tab{flex:1;text-align:center;padding:10px 3px;font-family:'Nunito',sans-serif;font-size:10.5px;letter-spacing:0.2px;color:var(--text-soft);cursor:pointer;border-right:1px dashed var(--paper-line);background:none;border-top:none;border-left:none;border-bottom:none;position:relative;white-space:nowrap;}
   .tab:last-child{border-right:none;}
   .tab.active{color:var(--ink-navy);font-weight:bold;background:var(--paper);}
+  .desktop-side-panel{display:none;}
   .tab.active::after{content:'';position:absolute;bottom:0;left:20%;right:20%;height:3px;background:var(--coral);}
 
   .page{display:none;padding:20px 20px 78px;flex:1;}
@@ -553,6 +554,44 @@
     .xword-scroll{ flex:1; min-width:280px; }
     .xword-toggle-clues{ display:none; }
     .xword-clues{ display:flex !important; width:280px; flex-shrink:0; max-height:520px; overflow-y:auto; }
+
+    /* painel lateral direito (missao do dia, sequencia, dica) — igual ao do Duolingo */
+    .desktop-side-panel{
+      display:flex; flex-direction:column; gap:14px; order:4; width:250px; flex-shrink:0;
+      padding:26px 20px; align-self:stretch; background:var(--paper-soft); border-left:1px solid var(--paper-line);
+    }
+    .dsp-card{ background:var(--paper); border:1px solid var(--paper-line); border-radius:14px; padding:16px; }
+    .dsp-title{ font-family:'Baloo 2',sans-serif; font-weight:700; color:var(--ink-navy); font-size:13px; margin-bottom:10px; }
+    .dsp-progress-track{ background:var(--paper-line); border-radius:999px; height:8px; overflow:hidden; margin-bottom:6px; }
+    .dsp-progress-fill{ background:var(--teal); height:100%; border-radius:999px; transition:width .4s ease; width:0%; }
+    .dsp-progress-label{ font-family:'Nunito',sans-serif; font-size:11px; color:var(--text-soft); }
+    .dsp-streak-num{ font-family:'Baloo 2',sans-serif; font-size:36px; color:var(--mustard-dark); font-weight:800; text-align:center; line-height:1; }
+    .dsp-streak-label{ text-align:center; font-family:'Nunito',sans-serif; font-size:11px; color:var(--text-soft); }
+    .dsp-tip{ background:#FFF6DE; border-color:var(--mustard); font-family:'Nunito',sans-serif; font-size:11.5px; color:var(--text-dark); line-height:1.45; }
+
+    /* MODO FOCO: quando você está DENTRO de um exercício (não navegando entre eles),
+       esconde o menu lateral e o painel de widgets — só o exercício importa, igual Duolingo. */
+    .app-shell:has(#page-vocab-cards.active) .tabbar,
+    .app-shell:has(#page-grammar-lesson.active) .tabbar,
+    .app-shell:has(#page-conv-dialog.active) .tabbar,
+    .app-shell:has(#page-extras.active .armgame-box) .tabbar,
+    .app-shell:has(#page-extras.active .xword-box) .tabbar{
+      display:none;
+    }
+    .app-shell:has(#page-vocab-cards.active) .desktop-side-panel,
+    .app-shell:has(#page-grammar-lesson.active) .desktop-side-panel,
+    .app-shell:has(#page-conv-dialog.active) .desktop-side-panel,
+    .app-shell:has(#page-extras.active .armgame-box) .desktop-side-panel,
+    .app-shell:has(#page-extras.active .xword-box) .desktop-side-panel{
+      display:none;
+    }
+    .app-shell:has(#page-vocab-cards.active) .page,
+    .app-shell:has(#page-grammar-lesson.active) .page,
+    .app-shell:has(#page-conv-dialog.active) .page,
+    .app-shell:has(#page-extras.active .armgame-box) .page,
+    .app-shell:has(#page-extras.active .xword-box) .page{
+      max-width:640px; margin:0 auto;
+    }
   }
 
   /* ---------- JOGO: BRAÇO DE FERRO ---------- */
@@ -796,6 +835,22 @@
     <button class="tab" data-page="conv-menu">Conversação</button>
     <button class="tab" data-page="extras">Extras</button>
   </div>
+
+  <aside class="desktop-side-panel" id="desktop-side-panel">
+    <div class="dsp-card">
+      <div class="dsp-title">🎯 Missão do dia</div>
+      <div class="dsp-progress-track"><div class="dsp-progress-fill" id="dsp-mission-fill"></div></div>
+      <div class="dsp-progress-label" id="dsp-mission-label">0 / 20 XP</div>
+    </div>
+    <div class="dsp-card">
+      <div class="dsp-title">🔥 Sua sequência</div>
+      <div class="dsp-streak-num" id="dsp-streak-num">0</div>
+      <div class="dsp-streak-label">dias seguidos</div>
+    </div>
+    <div class="dsp-card dsp-tip">
+      💡 Dica: no Vocabulário, alterne pro modo "Produzir" pra treinar a escrita, não só reconhecer a palavra.
+    </div>
+  </aside>
 
   <!-- ============ TRILHA (agora é a tela inicial) ============ -->
   <div class="page active" id="page-trilha">
@@ -2212,7 +2267,16 @@ function updateStats(){
   document.getElementById('topbar-hearts').textContent = curHearts;
   renderBadges();
   renderDailyMission();
+  renderDesktopSidePanel();
   if(typeof renderPath === 'function') renderPath();
+}
+function renderDesktopSidePanel(){
+  const fillEl = document.getElementById('dsp-mission-fill');
+  if(!fillEl) return; // painel só é usado em telas largas, mas os elementos sempre existem no DOM
+  const pct = Math.min(100, Math.round((state.dailyXP/DAILY_XP_GOAL)*100));
+  fillEl.style.width = pct+'%';
+  document.getElementById('dsp-mission-label').textContent = Math.min(state.dailyXP,DAILY_XP_GOAL)+' / '+DAILY_XP_GOAL+' XP';
+  document.getElementById('dsp-streak-num').textContent = state.streak;
 }
 function renderBadges(){
   const wrap = document.getElementById('badge-row'); wrap.innerHTML='';
