@@ -344,7 +344,7 @@
     background:none;border:none;color:var(--text-soft);font-family:'Nunito',sans-serif;font-weight:700;
     font-size:13px;padding:8px;cursor:pointer;
   }
-  .account-pill{display:flex;align-items:center;gap:4px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:3px 8px;font-size:10.5px;color:var(--paper);font-family:'Nunito',sans-serif;cursor:pointer;margin-top:6px;}
+  .account-pill{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:14px;padding:4px 10px 4px 4px;font-size:11.5px;color:var(--paper);font-family:'Nunito',sans-serif;cursor:pointer;margin-top:6px;}
 
   /* =========================================================================
      MODERNIZAÇÃO VISUAL + ANIMAÇÕES (estilo Duolingo)
@@ -451,7 +451,7 @@
   .avatar-preview{width:72px;height:72px;border-radius:50%;background:var(--paper-soft);border:2px solid var(--paper-line);display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:30px;}
   .avatar-preview img{width:100%;height:100%;object-fit:cover;}
   .avatar-picker-btns{display:flex;align-items:center;gap:10px;}
-  #account-pill-avatar{display:inline-flex;width:16px;height:16px;border-radius:50%;overflow:hidden;vertical-align:middle;align-items:center;justify-content:center;font-size:11px;}
+  #account-pill-avatar{display:inline-flex;width:26px;height:26px;border-radius:50%;overflow:hidden;vertical-align:middle;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
   #account-pill-avatar img{width:100%;height:100%;object-fit:cover;}
 
   /* -- Página muda com um leve slide + fade, mais "vivo" que um fade simples -- */
