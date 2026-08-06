@@ -508,6 +508,53 @@
     *,*::before,*::after{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important; }
   }
 
+  /* =========================================================================
+     LAYOUT DESKTOP (telas a partir de 900px) — só aqui de cima entra em ação.
+     No celular, nada disso se aplica (a media query nem é lida).
+  ========================================================================= */
+  @media (min-width: 900px){
+    body{ display:flex; justify-content:center; padding:24px 0; }
+    .app-shell{
+      max-width:1100px; min-height:calc(100vh - 48px); border-radius:20px;
+      display:flex; flex-wrap:wrap; align-items:flex-start; box-shadow:0 20px 60px rgba(0,0,0,0.45);
+    }
+    .topbar{ width:100%; order:1; border-radius:20px 20px 0 0; }
+
+    .tabbar{
+      order:2; position:static; left:auto; bottom:auto; transform:none; width:220px; max-width:none;
+      flex-direction:column; align-items:stretch; box-shadow:none; border-right:1px solid var(--paper-line);
+      border-radius:0; padding-top:12px; align-self:stretch; overflow-x:visible;
+    }
+    .tab{
+      flex:none; text-align:left; padding:13px 22px; font-size:13.5px; border-right:none;
+      border-bottom:none; border-radius:0 !important; display:flex; align-items:center; gap:10px;
+    }
+    .tab.active{ background:var(--paper-soft); border-left:3px solid var(--teal); transform:none; }
+    .tab:active{ transform:none; }
+    .tab[data-page="trilha"]::before{content:"🧭";}
+    .tab[data-page="vocab-menu"]::before{content:"📖";}
+    .tab[data-page="grammar-menu"]::before{content:"📐";}
+    .tab[data-page="conv-menu"]::before{content:"💬";}
+    .tab[data-page="extras"]::before{content:"🎮";}
+
+    .page{ order:3; flex:1; min-width:0; padding:30px 36px 40px; }
+
+    /* menus de lista (temas de vocab, lições de gramática, diálogos, jogos) ganham
+       varias colunas em vez de uma lista vertical unica — usa o espaço de verdade. */
+    #vocab-cat-list, #grammar-cat-list, #conv-cat-list, #games-menu-list{
+      display:grid !important; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:12px;
+    }
+    #vocab-cat-list .cat-chip, #grammar-cat-list .cat-chip, #conv-cat-list .cat-chip{ margin-bottom:0; }
+    #games-menu-list .menu-item{ margin-bottom:0; }
+
+    /* palavras cruzadas: pistas ficam sempre visiveis do lado, sem precisar expandir */
+    .xword-box{ display:flex; flex-wrap:wrap; gap:24px; align-items:flex-start; }
+    .xword-toolbar, .xword-clue-nav{ width:100%; }
+    .xword-scroll{ flex:1; min-width:280px; }
+    .xword-toggle-clues{ display:none; }
+    .xword-clues{ display:flex !important; width:280px; flex-shrink:0; max-height:520px; overflow-y:auto; }
+  }
+
   /* ---------- JOGO: BRAÇO DE FERRO ---------- */
   .armgame-box{background:var(--paper-soft);border:2px solid var(--paper-line);border-radius:18px;padding:18px;text-align:center;}
   .armgame-setup input{width:100%;padding:12px;border:2px solid var(--paper-line);border-radius:12px;font-family:'Nunito',sans-serif;font-size:14px;margin-bottom:10px;background:var(--paper);box-sizing:border-box;}
@@ -543,18 +590,18 @@
   .xword-toolbar .btn{flex:1;padding:10px;font-size:12px;}
   .xword-scroll{overflow-x:auto;padding-bottom:6px;margin-bottom:16px;}
   .xword-grid{display:inline-grid;gap:2px;background:var(--paper-line);border-radius:6px;padding:2px;}
-  .xword-cell{width:28px;height:28px;position:relative;}
+  .xword-cell{width:var(--xw-cell, 28px);height:var(--xw-cell, 28px);position:relative;}
   .xword-cell.blocked{background:var(--ink-navy);border-radius:2px;}
   .xword-cell input{
     width:100%;height:100%;border:none;text-align:center;text-transform:uppercase;
-    font-family:'Baloo 2',sans-serif;font-weight:700;font-size:14px;color:var(--ink-navy);
+    font-family:'Baloo 2',sans-serif;font-weight:700;font-size:calc(var(--xw-cell, 28px) * 0.5);color:var(--ink-navy);
     background:var(--paper);border-radius:2px;padding:0;box-sizing:border-box;
   }
   .xword-cell input:focus{outline:2px solid var(--mustard);outline-offset:-2px;position:relative;z-index:2;}
   .xword-cell input.xw-active-word{background:#FFF6DE;}
   .xword-cell input.xw-correct{background:#DFF5DE;color:var(--green-dark);}
   .xword-cell input.xw-wrong{background:#FCEBE9;color:var(--coral-dark);}
-  .xword-num{position:absolute;top:0px;left:2px;font-size:7.5px;font-family:'Nunito',sans-serif;font-weight:800;color:var(--text-soft);pointer-events:none;z-index:3;line-height:1;}
+  .xword-num{position:absolute;top:0px;left:2px;font-size:calc(var(--xw-cell, 28px) * 0.27);font-family:'Nunito',sans-serif;font-weight:800;color:var(--text-soft);pointer-events:none;z-index:3;line-height:1;}
   .xword-clues{display:flex;flex-direction:column;gap:14px;}
   .xword-clue-group h4{font-family:'Baloo 2',sans-serif;color:var(--ink-navy);margin:0 0 6px;font-size:13px;}
   .xword-clue{font-family:'Nunito',sans-serif;font-size:12px;color:var(--text-dark);padding:5px 8px;border-radius:8px;cursor:pointer;display:flex;gap:6px;}
@@ -3379,9 +3426,25 @@ function xwordWordsAt(row, col){
     return false;
   });
 }
+function xwordComputeCellSize(){
+  const scrollWrap = document.querySelector('.xword-scroll');
+  if(!scrollWrap || !xwordPuzzle) return 28;
+  const availableWidth = scrollWrap.clientWidth - 4; // -4 pelo padding do grid (2px de cada lado)
+  const gapTotal = (xwordPuzzle.gridW - 1) * 2; // 2px de gap entre células
+  const raw = (availableWidth - gapTotal) / xwordPuzzle.gridW;
+  return Math.max(20, Math.min(32, Math.floor(raw))); // nunca menor que 20px (legível) nem maior que 32px
+}
+function xwordApplyResponsiveSizing(){
+  const gridEl = document.getElementById('xword-grid');
+  if(!gridEl || !xwordPuzzle) return;
+  const cellSize = xwordComputeCellSize();
+  gridEl.style.setProperty('--xw-cell', cellSize+'px');
+  gridEl.style.gridTemplateColumns = 'repeat('+xwordPuzzle.gridW+', var(--xw-cell))';
+}
+window.addEventListener('resize', ()=>{ if(xwordPuzzle) xwordApplyResponsiveSizing(); });
+
 function xwordRenderGrid(){
   const gridEl = document.getElementById('xword-grid');
-  gridEl.style.gridTemplateColumns = 'repeat('+xwordPuzzle.gridW+', 28px)';
   gridEl.innerHTML = '';
   for(let r=0;r<xwordPuzzle.gridH;r++){
     for(let c=0;c<xwordPuzzle.gridW;c++){
@@ -3403,6 +3466,7 @@ function xwordRenderGrid(){
       gridEl.appendChild(cell);
     }
   }
+  xwordApplyResponsiveSizing();
 }
 function xwordRenderClues(){
   const wrap = document.getElementById('xword-clues');
