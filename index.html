@@ -303,6 +303,13 @@
   /* ---------- AUTENTICACAO ---------- */
   .auth-overlay{position:fixed;inset:0;background:var(--ink-navy);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;}
   .auth-box{width:100%;max-width:360px;background:var(--paper);border-radius:14px;padding:26px 22px;box-shadow:0 10px 40px rgba(0,0,0,0.4);}
+  .auth-loading{width:100%;max-width:280px;text-align:center;}
+  .auth-loading-cat{width:100px;height:100px;animation:catBreathe 2.2s ease-in-out infinite;filter:drop-shadow(0 10px 18px rgba(0,0,0,0.35));}
+  .auth-loading-text{font-family:'Nunito',sans-serif;color:#fff;font-size:13px;margin-top:6px;}
+  .auth-overlay{transition:opacity .45s ease, visibility .45s ease;}
+  .auth-overlay.fading-out{opacity:0;visibility:hidden;pointer-events:none;}
+  .app-shell.entering{animation:appEntranceFade .5s ease;}
+  @keyframes appEntranceFade{ from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);} }
   .auth-box h2{margin:0 0 4px;color:var(--ink-navy);font-size:19px;}
   .auth-box .auth-sub{font-family:'Nunito',sans-serif;font-size:12px;color:var(--text-soft);margin:0 0 18px;}
   .auth-tabs{display:flex;background:var(--paper-soft);border-radius:20px;padding:3px;margin-bottom:16px;}
@@ -555,6 +562,12 @@
   .xword-clue.xw-active{background:#FFF0C2;font-weight:700;}
   .xword-clue b{color:var(--ink-navy);min-width:16px;}
   .xword-status{text-align:center;font-family:'Nunito',sans-serif;font-size:12px;color:var(--text-soft);margin-bottom:10px;}
+  .xword-clue-nav{display:flex;align-items:center;gap:8px;background:#FFF6DE;border:2px solid var(--mustard);border-radius:14px;padding:8px 6px;margin-bottom:12px;}
+  .xword-nav-arrow{background:var(--mustard);color:var(--deep-navy);border:none;width:30px;height:30px;border-radius:50%;font-size:16px;font-weight:800;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 0 var(--mustard-dark);}
+  .xword-nav-arrow:active{transform:translateY(2px);box-shadow:none;}
+  .xword-clue-current{flex:1;text-align:center;font-family:'Nunito',sans-serif;font-size:12.5px;font-weight:700;color:var(--ink-navy);line-height:1.3;}
+  .xword-clue-current b{color:var(--deep-navy);}
+  .xword-toggle-clues{width:100%;background:none;border:none;font-family:'Nunito',sans-serif;font-size:11.5px;color:var(--text-soft);text-decoration:underline;cursor:pointer;padding:8px 0 2px;}
   .armgame-countdown-num{font-family:'Baloo 2',sans-serif;font-size:56px;font-weight:800;color:var(--mustard);}
   .armgame-countdown-num.pop{animation:popIn .4s cubic-bezier(.34,1.56,.64,1);}
 </style>
@@ -562,7 +575,30 @@
 <body>
 
 <div class="auth-overlay" id="auth-overlay">
-  <div class="auth-box">
+  <div class="auth-loading" id="auth-loading" style="display:none;">
+    <svg class="auth-loading-cat" viewBox="60 30 180 180" xmlns="http://www.w3.org/2000/svg">
+      <path d="M 80 110 L 62 20 L 135 90 Z" fill="#15161c"/>
+      <path d="M 88 98 L 78 46 L 122 86 Z" fill="#4a2f38"/>
+      <path d="M 220 110 L 238 20 L 165 90 Z" fill="#15161c"/>
+      <path d="M 212 98 L 222 46 L 178 86 Z" fill="#4a2f38"/>
+      <circle cx="150" cy="150" r="92" fill="#15161c"/>
+      <ellipse cx="108" cy="144" rx="23" ry="17" fill="#f4f4f2"/>
+      <ellipse cx="192" cy="144" rx="23" ry="17" fill="#f4f4f2"/>
+      <circle cx="114" cy="144" r="13" fill="#8fd44a"/>
+      <circle cx="186" cy="144" r="13" fill="#8fd44a"/>
+      <ellipse cx="114" cy="144" rx="4" ry="12.5" fill="#111"/>
+      <ellipse cx="186" cy="144" rx="4" ry="12.5" fill="#111"/>
+      <circle cx="117" cy="139" r="3" fill="#fff"/>
+      <circle cx="189" cy="139" r="3" fill="#fff"/>
+      <path d="M 84 136 Q 108 120 132 134 L 132 142 Q 108 130 84 146 Z" fill="#15161c"/>
+      <path d="M 168 134 Q 192 120 216 136 L 216 146 Q 192 130 168 142 Z" fill="#15161c"/>
+      <path d="M 141 180 L 159 180 L 150 192 Z" fill="#4a2f38"/>
+      <path d="M 126 196 Q 150 208 174 196" stroke="#f4f4f2" stroke-width="5" fill="none" stroke-linecap="round"/>
+    </svg>
+    <div class="armgame-spinner" style="margin:10px auto;"></div>
+    <div class="auth-loading-text">Carregando sua conta...</div>
+  </div>
+  <div class="auth-box" id="auth-box">
     <h2>🐈‍⬛ Gatolíngua</h2>
     <p class="auth-sub">Crie uma conta pra salvar seu progresso e acessar de qualquer aparelho.</p>
     <div class="auth-tabs">
@@ -1046,10 +1082,14 @@ document.getElementById('auth-avatar-input').addEventListener('change', async (e
 document.getElementById('auth-avatar-remove').addEventListener('click', resetAvatarPicker);
 document.getElementById('auth-tab-login').addEventListener('click', ()=>setAuthMode('login'));
 document.getElementById('auth-tab-register').addEventListener('click', ()=>setAuthMode('register'));
-document.getElementById('auth-skip').addEventListener('click', ()=>{
-  document.getElementById('auth-overlay').style.display = 'none';
+function revealAppWithFade(){
+  const overlay = document.getElementById('auth-overlay');
+  overlay.classList.add('fading-out');
+  document.querySelector('.app-shell').classList.add('entering');
   startApp();
-});
+  setTimeout(()=>{ overlay.style.display = 'none'; }, 450); // espera a transição de fade acabar
+}
+document.getElementById('auth-skip').addEventListener('click', revealAppWithFade);
 document.getElementById('auth-submit').addEventListener('click', async ()=>{
   const email = document.getElementById('auth-email').value.trim();
   const password = document.getElementById('auth-password').value;
@@ -1066,8 +1106,7 @@ document.getElementById('auth-submit').addEventListener('click', async ()=>{
     setAuth(data.token, data.user);
     resetAvatarPicker();
     await fetchRemoteProgress();
-    document.getElementById('auth-overlay').style.display = 'none';
-    startApp();
+    revealAppWithFade();
   }catch(e){
     errBox.textContent = e.message || 'Não foi possível conectar ao servidor.';
     errBox.classList.add('show');
@@ -3063,7 +3102,7 @@ function buildCrosswordWordPool(){
   Object.keys(VOCAB).forEach(catKey=>{
     VOCAB[catKey].words.forEach(w=>{
       const en = w[0].toUpperCase();
-      if(/^[A-Z]{3,9}$/.test(en)){ pool.push([en, w[1]]); } // só letras puras A-Z, sem espaço/hífen/apóstrofo
+      if(/^[A-Z]{3,7}$/.test(en)){ pool.push([en, w[1]]); } // letras puras, 3-7 (palavras curtas encaixam mais apertado)
     });
   });
   return pool;
@@ -3073,13 +3112,11 @@ function xwordShuffle(arr, rng){
   for(let i=a.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
   return a;
 }
-function generateCrosswordPuzzle(targetCount, rng){
-  const fullPool = buildCrosswordWordPool();
-  const pool = xwordShuffle(fullPool, rng).slice(0, 35).sort((a,b)=>b[0].length-a[0].length);
+function xwordGenerateOneAttempt(basePool, targetCount, rng){
+  const pool = xwordShuffle(basePool, rng).slice(0, 60).sort((a,b)=>b[0].length-a[0].length);
   const placed = [];
   const grid = new Map();
   const cellKey = (r,c)=> r+','+c;
-
   function scorePlacement(word, row, col, dir){
     // conta quantos cruzamentos de verdade essa posição teria, e rejeita se colar
     // sem querer numa palavra vizinha sem cruzar (letra encostada sem ser intersecção).
@@ -3089,19 +3126,30 @@ function generateCrosswordPuzzle(targetCount, rng){
       const c = dir==='H' ? col+i : col;
       const key = cellKey(r,c);
       if(grid.has(key)){
-        if(grid.get(key) !== word[i]) return -1;
+        if(grid.get(key) !== word[i]) return null;
         crossings++;
       } else {
         const n1 = dir==='H' ? cellKey(r-1,c) : cellKey(r,c-1);
         const n2 = dir==='H' ? cellKey(r+1,c) : cellKey(r,c+1);
-        if(grid.has(n1) || grid.has(n2)) return -1;
+        if(grid.has(n1) || grid.has(n2)) return null;
       }
     }
     const beforeR = dir==='H' ? row : row-1, beforeC = dir==='H' ? col-1 : col;
     const afterR = dir==='H' ? row : row+word.length, afterC = dir==='H' ? col+word.length : col;
-    if(grid.has(cellKey(beforeR,beforeC)) || grid.has(cellKey(afterR,afterC))) return -1;
-    if(crossings === 0) return -1; // toda palavra nova precisa cruzar com alguma já existente
+    if(grid.has(cellKey(beforeR,beforeC)) || grid.has(cellKey(afterR,afterC))) return null;
+    if(crossings === 0) return null; // toda palavra nova precisa cruzar com alguma já existente
     return crossings;
+  }
+  function boundingArea(){
+    if(!placed.length) return 0;
+    let minR=0,minC=0,maxR=0,maxC=0;
+    placed.forEach(p=>{
+      const endR = p.dir==='H'?p.row:p.row+p.word.length-1;
+      const endC = p.dir==='H'?p.col+p.word.length-1:p.col;
+      minR=Math.min(minR,p.row); minC=Math.min(minC,p.col);
+      maxR=Math.max(maxR,endR); maxC=Math.max(maxC,endC);
+    });
+    return (maxR-minR+1)*(maxC-minC+1);
   }
   function place(word, clue, row, col, dir){
     for(let i=0;i<word.length;i++){
@@ -3111,14 +3159,15 @@ function generateCrosswordPuzzle(targetCount, rng){
     }
     placed.push({word, clue, row, col, dir});
   }
-  if(!pool.length) return null;
+  if(!pool.length) return [];
   place(pool[0][0], pool[0][1], 0, 0, 'H');
   for(let wi=1; wi<pool.length && placed.length<targetCount; wi++){
     const [word, clue] = pool[wi];
     if(placed.some(p=>p.word===word)) continue; // evita palavra duplicada
     let best = null;
-    // testa TODAS as posições possíveis de cruzamento e guarda a que cruza mais vezes,
-    // não só a primeira que funcionar (é isso que faz a cruzadinha ficar bem encaixada).
+    const oldArea = boundingArea();
+    // testa TODAS as posições possíveis de cruzamento e guarda a que cruza mais vezes
+    // (e, empatado, a que deixa o grid mais compacto) — não só a primeira que funcionar.
     for(const existing of placed){
       for(let ei=0; ei<existing.word.length; ei++){
         const letter = existing.word[ei];
@@ -3129,13 +3178,48 @@ function generateCrosswordPuzzle(targetCount, rng){
           const newDir = existing.dir==='H' ? 'V' : 'H';
           const row = newDir==='H' ? cr : cr-ni;
           const col = newDir==='H' ? cc-ni : cc;
-          const score = scorePlacement(word, row, col, newDir);
-          if(score > 0 && (!best || score > best.score)){ best = {row, col, dir:newDir, score}; }
+          const crossings = scorePlacement(word, row, col, newDir);
+          if(crossings === null) continue;
+          const score = crossings*1000 - boundingArea(); // cruzamentos pesam muito mais, área é só desempate
+          if(!best || score > best.score){ best = {row, col, dir:newDir, score}; }
         }
       }
     }
     if(best) place(word, clue, best.row, best.col, best.dir);
   }
+  return placed;
+}
+function xwordMetrics(placed){
+  let minR=0,maxR=0,minC=0,maxC=0;
+  const cellCount = new Map();
+  placed.forEach(p=>{
+    for(let i=0;i<p.word.length;i++){
+      const r = p.dir==='H'?p.row:p.row+i, c = p.dir==='H'?p.col+i:p.col;
+      const k = r+','+c;
+      cellCount.set(k, (cellCount.get(k)||0)+1);
+      minR=Math.min(minR,r); maxR=Math.max(maxR,r);
+      minC=Math.min(minC,c); maxC=Math.max(maxC,c);
+    }
+  });
+  const crossings = [...cellCount.values()].filter(v=>v>1).length;
+  const area = (maxR-minR+1)*(maxC-minC+1);
+  return { crossings, area };
+}
+function generateCrosswordPuzzle(targetCount, daySeed){
+  const basePool = buildCrosswordWordPool();
+  // gera VARIAS tentativas (deterministicamente, a partir da mesma seed do dia) e escolhe
+  // a mais densa/compacta — isso é o que faz a cruzadinha parecer "de jornal" de verdade.
+  let bestPlaced = null, bestScore = -Infinity;
+  for(let a=0; a<25; a++){
+    const rng = xwordHashSeed(daySeed+'-attempt-'+a);
+    const placed = xwordGenerateOneAttempt(basePool, targetCount, rng);
+    const m = xwordMetrics(placed);
+    const score = placed.length*100000 + m.crossings*10 - m.area;
+    if(score > bestScore){ bestScore = score; bestPlaced = placed; }
+  }
+  const placed = bestPlaced || [];
+  if(!placed.length) return null;
+
   // normaliza coordenadas pra começar em 0,0
   let minR=0, minC=0, maxR=0, maxC=0;
   placed.forEach(p=>{
@@ -3163,8 +3247,7 @@ function generateCrosswordPuzzle(targetCount, rng){
 }
 function getTodaysCrossword(){
   const dayId = xwordPuzzleDayId();
-  const rng = xwordHashSeed('xword-'+dayId);
-  return { puzzle: generateCrosswordPuzzle(10, rng), dayId };
+  return { puzzle: generateCrosswordPuzzle(10, 'xword-'+dayId), dayId };
 }
 
 let xwordCountdownTimer = null;
@@ -3228,16 +3311,47 @@ function renderCrosswordGame(){
       '<div class="xword-toolbar">'+
         '<button class="btn btn-primary" id="xword-check-btn" style="width:100%;">Verificar</button>'+
       '</div>'+
-      '<div class="xword-status" id="xword-status">Toque numa célula ou numa pista pra começar.</div>'+
+      '<div class="xword-clue-nav">'+
+        '<button class="xword-nav-arrow" id="xword-prev-btn">‹</button>'+
+        '<div class="xword-clue-current" id="xword-status">Toque numa célula pra começar.</div>'+
+        '<button class="xword-nav-arrow" id="xword-next-btn">›</button>'+
+      '</div>'+
       '<div class="xword-scroll"><div class="xword-grid" id="xword-grid"></div></div>'+
-      '<div class="xword-clues" id="xword-clues"></div>'+
+      '<button class="xword-toggle-clues" id="xword-toggle-clues-btn">Ver todas as pistas ▾</button>'+
+      '<div class="xword-clues" id="xword-clues" style="display:none;"></div>'+
     '</div>';
   document.getElementById('xword-back-btn').addEventListener('click', renderGamesMenu);
   document.getElementById('xword-check-btn').addEventListener('click', xwordCheck);
+  document.getElementById('xword-prev-btn').addEventListener('click', ()=>xwordGoRelative(-1));
+  document.getElementById('xword-next-btn').addEventListener('click', ()=>xwordGoRelative(1));
+  document.getElementById('xword-toggle-clues-btn').addEventListener('click', xwordToggleCluesList);
   xwordRenderGrid();
   xwordRenderClues();
   xwordRestoreProgress(dayId);
   xwordHighlightWord(0);
+}
+
+function xwordToggleCluesList(){
+  const list = document.getElementById('xword-clues');
+  const btn = document.getElementById('xword-toggle-clues-btn');
+  const showing = list.style.display !== 'none';
+  list.style.display = showing ? 'none' : 'flex';
+  btn.textContent = showing ? 'Ver todas as pistas ▾' : 'Esconder lista de pistas ▴';
+}
+function xwordOrderedWords(){
+  return xwordPuzzle.placed
+    .map((p,idx)=>({p,idx}))
+    .sort((a,b)=> a.p.num-b.p.num || (a.p.dir===b.p.dir ? 0 : (a.p.dir==='H' ? -1 : 1)));
+}
+function xwordGoRelative(delta){
+  const ordered = xwordOrderedWords();
+  const curPos = Math.max(0, ordered.findIndex(o=>o.idx===xwordActiveWordIdx));
+  const nextPos = (curPos + delta + ordered.length) % ordered.length;
+  const idx = ordered[nextPos].idx;
+  xwordHighlightWord(idx);
+  const p = xwordPuzzle.placed[idx];
+  const firstInput = document.getElementById('xw-cell-'+p.row+'-'+p.col);
+  if(firstInput) firstInput.focus();
 }
 
 function xwordCellLetter(row, col){
@@ -3317,7 +3431,7 @@ function xwordHighlightWord(idx){
   }
   const clueEl = document.querySelector('.xword-clue[data-word="'+p.word+'"][data-dir="'+p.dir+'"]');
   if(clueEl){ clueEl.classList.add('xw-active'); }
-  document.getElementById('xword-status').textContent = (p.dir==='H'?'➡️':'⬇️')+' '+p.num+'. '+p.clue;
+  document.getElementById('xword-status').innerHTML = '<b>'+p.num+(p.dir==='H'?'→':'↓')+'</b> '+p.clue;
 }
 function xwordOnCellFocus(row,col){
   const words = xwordWordsAt(row,col);
@@ -3448,7 +3562,11 @@ function maybeShowWelcomeBack(){
 
 (async function initAuthGate(){
   if(getAuthToken()){
-    // Já tem sessão salva: tenta puxar o progresso do servidor antes de mostrar o app.
+    // Já tem sessão salva: mostra a tela de carregamento (com o gato) em vez do
+    // formulário de login, enquanto busca o progresso — assim não fica dando aquele
+    // "flash" do formulário pra quem já tá logado.
+    document.getElementById('auth-box').style.display = 'none';
+    document.getElementById('auth-loading').style.display = 'block';
     try{
       await fetchRemoteProgress();
       // Também atualiza o perfil em cache (nome/foto), caso tenha mudado em outro aparelho.
@@ -3456,11 +3574,13 @@ function maybeShowWelcomeBack(){
         const accData = await apiRequest('/account');
         if(accData && accData.user) localStorage.setItem(AUTH_USER_KEY, JSON.stringify(accData.user));
       }catch(e){ /* falha silenciosa - segue com o que já está em cache local */ }
-      document.getElementById('auth-overlay').style.display = 'none';
-      startApp();
+
+      revealAppWithFade();
     }catch(e){
       // Token inválido/expirado ou servidor fora do ar: cai pra tela de login.
       clearAuth();
+      document.getElementById('auth-loading').style.display = 'none';
+      document.getElementById('auth-box').style.display = 'block';
       document.getElementById('auth-error').textContent = 'Sua sessão expirou ou o servidor está indisponível. Entre novamente ou continue sem conta.';
       document.getElementById('auth-error').classList.add('show');
     }
