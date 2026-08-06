@@ -7,11 +7,13 @@
 // número no CACHE_NAME abaixo (v1 -> v2 -> v3...). Isso força os navegadores que já instalaram
 // o app a jogarem fora o cache antigo e buscarem os arquivos novos, em vez de continuar
 // mostrando pra sempre a versão antiga que ficou guardada.
-const CACHE_NAME = 'passaporte-ingles-v2';
+const CACHE_NAME = 'passaporte-ingles-v3';
 const APP_SHELL = [
   './',
   './index.html',
   './manifest.json',
+  './css/style.css',
+  './js/app.js',
   './icons/icon-192.png',
   './icons/icon-512.png'
 ];

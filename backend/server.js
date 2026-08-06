@@ -6,10 +6,10 @@ const http = require('http');
 const { Server: SocketIOServer } = require('socket.io');
 
 const { initSchema } = require('./db');
-const { router: authRouter } = require('./auth');
-const progressRouter = require('./progress');
-const accountRouter = require('./account');
-const attachArmGame = require('./armgame');
+const { router: authRouter } = require('./routes/auth');
+const progressRouter = require('./routes/progress');
+const accountRouter = require('./routes/account');
+const attachArmGame = require('./game/armgame');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
