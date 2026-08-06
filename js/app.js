@@ -1998,7 +1998,8 @@ function renderGamesMenu(){
 
   const games = [
     { icon:'🤜🤛', title:'Braço de Ferro', desc:'1x1 online, em tempo real — melhor de 5', onOpen: renderArmGameSetup },
-    { icon:'🧩', title:'Palavras Cruzadas', desc:'1 nova por dia — reseta às 18h', onOpen: renderCrosswordGame }
+    { icon:'🧩', title:'Palavras Cruzadas', desc:'1 nova por dia — reseta às 18h', onOpen: renderCrosswordGame },
+    { icon:'🎯', title:'Forca', desc:'Adivinhe a palavra em inglês antes de errar demais', onOpen: renderHangmanSetup }
     // novos jogos entram aqui depois, no mesmo formato
   ];
 
@@ -2731,6 +2732,113 @@ function xwordCheck(){
   } else {
     statusEl.textContent = correct+' de '+total+' letras certas até agora. Continue!';
   }
+}
+
+/* =========================================================
+   JOGO: FORCA
+========================================================= */
+let hangGame = null; // { word, clue, guessed:Set, wrongCount, maxWrong }
+
+function buildHangmanWordPool(){
+  const pool = [];
+  Object.values(VOCAB).forEach(cat=>{
+    cat.words.forEach(w=>{
+      const en = w[0].toUpperCase();
+      if(/^[A-Z ]{3,14}$/.test(en)) pool.push({en, pt:w[1]}); // letras e espaço só (frases curtas tambem valem)
+    });
+  });
+  return pool;
+}
+
+function renderHangmanSetup(){
+  const wrap = document.getElementById('extras-games');
+  wrap.innerHTML =
+    '<button class="back-btn" id="hang-back-btn">← Jogos</button>'+
+    '<div class="hang-box hang-setup">'+
+      '<div style="font-size:40px;margin-bottom:6px;">🎯</div>'+
+      '<h3 style="font-family:\'Baloo 2\',sans-serif;color:var(--heading-text);margin:0 0 4px;">Forca</h3>'+
+      '<p style="font-family:\'Nunito\',sans-serif;font-size:12px;color:var(--text-soft);margin:0 0 16px;">Adivinhe a palavra em inglês letra por letra. Você tem 6 chances antes de errar demais.</p>'+
+      '<button class="btn btn-primary" id="hang-start-btn" style="width:100%;">Jogar 🎯</button>'+
+    '</div>';
+  document.getElementById('hang-back-btn').addEventListener('click', renderGamesMenu);
+  document.getElementById('hang-start-btn').addEventListener('click', hangNewGame);
+}
+
+function hangNewGame(){
+  const pool = buildHangmanWordPool();
+  const pick = pool[Math.floor(Math.random()*pool.length)];
+  hangGame = { word: pick.en, clue: pick.pt, guessed: new Set(), wrongCount: 0, maxWrong: 6, finished:false };
+  renderHangmanGame();
+}
+
+function hangWordDisplay(){
+  return hangGame.word.split('').map(ch=>{
+    if(ch===' ') return ' ';
+    return hangGame.guessed.has(ch) ? ch : '_';
+  }).join(' ');
+}
+function hangIsWon(){
+  return hangGame.word.split('').every(ch => ch===' ' || hangGame.guessed.has(ch));
+}
+function hangHeartsHtml(){
+  const remaining = hangGame.maxWrong - hangGame.wrongCount;
+  return '❤️'.repeat(Math.max(0,remaining)) + '🖤'.repeat(hangGame.maxWrong - Math.max(0,remaining));
+}
+function renderHangmanGame(){
+  const wrap = document.getElementById('extras-games');
+  wrap.innerHTML =
+    '<button class="back-btn" id="hang-back-btn">← Jogos</button>'+
+    '<div class="hang-box">'+
+      '<div class="hang-hearts" id="hang-hearts">'+hangHeartsHtml()+'</div>'+
+      '<div class="hang-clue">💡 '+hangGame.clue+'</div>'+
+      '<div class="hang-word" id="hang-word">'+hangWordDisplay()+'</div>'+
+      '<div class="hang-status" id="hang-status">&nbsp;</div>'+
+      '<div class="hang-keyboard" id="hang-keyboard"></div>'+
+    '</div>';
+  document.getElementById('hang-back-btn').addEventListener('click', renderHangmanSetup);
+  const kb = document.getElementById('hang-keyboard');
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(letter=>{
+    const btn = document.createElement('button');
+    btn.className = 'hang-key';
+    btn.textContent = letter;
+    btn.addEventListener('click', ()=>hangGuess(letter, btn));
+    kb.appendChild(btn);
+  });
+}
+function hangGuess(letter, btnEl){
+  if(hangGame.finished || hangGame.guessed.has(letter)) return;
+  hangGame.guessed.add(letter);
+  btnEl.disabled = true;
+  const isCorrect = hangGame.word.includes(letter);
+  btnEl.classList.add(isCorrect ? 'hang-key-correct' : 'hang-key-wrong');
+  if(!isCorrect) hangGame.wrongCount++;
+
+  document.getElementById('hang-word').textContent = hangWordDisplay();
+  document.getElementById('hang-hearts').textContent = hangHeartsHtml();
+
+  if(hangIsWon()){
+    hangGame.finished = true;
+    document.getElementById('hang-status').innerHTML = '🎉 Você acertou! <b>'+hangGame.word+'</b>';
+    confettiBurst(30);
+    addXP(10);
+    document.querySelectorAll('.hang-key').forEach(b=>b.disabled=true);
+    hangShowPlayAgain();
+  } else if(hangGame.wrongCount >= hangGame.maxWrong){
+    hangGame.finished = true;
+    document.getElementById('hang-status').innerHTML = '💀 Não foi essa vez... a palavra era <b>'+hangGame.word+'</b>';
+    document.querySelectorAll('.hang-key').forEach(b=>b.disabled=true);
+    hangShowPlayAgain();
+  }
+}
+function hangShowPlayAgain(){
+  const box = document.querySelector('.hang-box');
+  const btn = document.createElement('button');
+  btn.className = 'btn btn-primary';
+  btn.style.width = '100%'; btn.style.marginTop = '14px';
+  btn.textContent = 'Jogar de novo';
+  btn.id = 'hang-again-btn';
+  btn.addEventListener('click', hangNewGame);
+  box.appendChild(btn);
 }
 
 /* =========================================================

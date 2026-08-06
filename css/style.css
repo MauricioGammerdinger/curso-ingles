@@ -686,3 +686,16 @@
   body.dark-mode .wod-reveal-btn{ background:rgba(0,0,0,0.25); color:#fff; }
   body.dark-mode .auth-box, body.dark-mode .logout-box{ background:var(--paper); }
   body.dark-mode .path-node.state-upcoming{ filter:brightness(1.4); }
+
+  /* ---------- JOGO: FORCA ---------- */
+  .hang-box{background:var(--paper-soft);border:2px solid var(--paper-line);border-radius:18px;padding:20px 16px;text-align:center;}
+  .hang-hearts{font-size:16px;letter-spacing:2px;margin-bottom:10px;}
+  .hang-clue{font-family:'Nunito',sans-serif;font-size:13px;color:var(--text-dark);background:var(--paper);border-radius:10px;padding:10px 14px;margin-bottom:14px;}
+  .hang-word{font-family:'Baloo 2',sans-serif;font-size:26px;font-weight:800;color:var(--heading-text);letter-spacing:6px;margin-bottom:10px;word-break:break-all;}
+  .hang-status{font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;color:var(--text-dark);min-height:20px;margin-bottom:12px;}
+  .hang-keyboard{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;}
+  .hang-key{width:30px;height:34px;border:2px solid var(--paper-line);background:var(--paper);border-radius:8px;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:13px;color:var(--heading-text);cursor:pointer;}
+  .hang-key:active{transform:translateY(1px);}
+  .hang-key:disabled{cursor:default;}
+  .hang-key-correct{background:var(--teal);color:#fff;border-color:var(--teal);}
+  .hang-key-wrong{background:var(--coral);color:#fff;border-color:var(--coral);opacity:0.6;}
