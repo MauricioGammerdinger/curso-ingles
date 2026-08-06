@@ -116,6 +116,7 @@
     </div>
     <div class="logout-title">Já vai? 🥺</div>
     <div class="logout-sub">Seu progresso continua salvo na nuvem — pode voltar quando quiser.</div>
+    <button class="auth-skip" id="open-settings-btn" style="margin:2px 0 12px;">⚙️ Configurações</button>
     <div class="logout-actions">
       <button class="logout-btn-confirm" id="logout-confirm-btn">Sair da conta</button>
       <button class="logout-btn-cancel" id="logout-cancel-btn">Continuar estudando</button>
@@ -219,6 +220,7 @@
   <!-- ============ TRILHA (agora é a tela inicial) ============ -->
   <div class="page active" id="page-trilha">
     <div id="daily-mission-card"></div>
+    <div id="word-of-day-card"></div>
 
     <div class="section-h">🗺️ Trilha de 6 a 12 meses</div>
     <p class="page-sub" style="margin-top:-4px;">Siga o caminho — toque na bolinha em destaque pra praticar</p>
@@ -339,7 +341,57 @@
     <div id="extras-games"></div>
   </div>
 
+  <!-- ============ CONFIGURAÇÕES ============ -->
+  <div class="page" id="page-settings">
+    <button class="back-btn" id="settings-back-btn">← Voltar</button>
+    <h2 class="page-title">⚙️ Configurações</h2>
+
+    <div class="section-h">👤 Seu nome</div>
+    <div class="settings-box">
+      <input type="text" id="settings-name-input" maxlength="80" placeholder="Seu nome">
+      <button class="btn btn-primary" id="settings-name-save" style="width:100%;margin-top:8px;">Salvar nome</button>
+      <div class="produce-feedback" id="settings-name-feedback"></div>
+    </div>
+
+    <div class="section-h">🎬 Animações</div>
+    <div class="settings-box settings-toggle-row">
+      <div>
+        <strong>Reduzir animações</strong>
+        <div class="settings-toggle-desc">Deixa o app mais "parado" — útil se as animações incomodarem ou pra economizar bateria.</div>
+      </div>
+      <label class="settings-switch">
+        <input type="checkbox" id="settings-reduce-motion">
+        <span class="settings-switch-slider"></span>
+      </label>
+    </div>
+
+    <div class="section-h">🌙 Aparência</div>
+    <div class="settings-box settings-toggle-row">
+      <div>
+        <strong>Modo escuro</strong>
+        <div class="settings-toggle-desc">Troca o fundo claro por um mais escuro, mais suave pra usar de noite.</div>
+      </div>
+      <label class="settings-switch">
+        <input type="checkbox" id="settings-dark-mode">
+        <span class="settings-switch-slider"></span>
+      </label>
+    </div>
+
+    <div class="section-h">⚠️ Zona de risco</div>
+    <div class="settings-box settings-danger-box">
+      <strong>Apagar minha conta</strong>
+      <div class="settings-toggle-desc">Isso apaga sua conta e todo o progresso salvo na nuvem pra sempre. Não tem como desfazer.</div>
+      <button class="btn" id="settings-delete-btn" style="width:100%;margin-top:10px;background:var(--coral);color:#fff;box-shadow:0 4px 0 var(--coral-dark);">Apagar minha conta</button>
+      <div id="settings-delete-confirm-area" style="display:none;margin-top:10px;">
+        <div class="produce-feedback bad">Tem certeza? Digite <b>APAGAR</b> abaixo pra confirmar — essa ação não pode ser desfeita.</div>
+        <input type="text" id="settings-delete-input" placeholder="Digite APAGAR" style="margin-top:8px;">
+        <button class="btn" id="settings-delete-confirm-btn" style="width:100%;margin-top:8px;background:var(--coral-dark);color:#fff;" disabled>Apagar pra sempre</button>
+      </div>
+    </div>
+  </div>
+
 </div>
+
 
 <div class="stamp-layer" id="stampLayer">
   <svg viewBox="0 0 150 150">

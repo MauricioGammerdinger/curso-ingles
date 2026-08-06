@@ -26,4 +26,20 @@ router.put('/avatar', requireAuth, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+router.put('/name', requireAuth, async (req, res, next) => {
+  try {
+    const name = (req.body && typeof req.body.name === 'string') ? req.body.name.trim().slice(0, 80) : '';
+    await pool.query('UPDATE users SET name = $1 WHERE id = $2', [name, req.userId]);
+    res.json({ ok: true, name });
+  } catch (e) { next(e); }
+});
+
+// Apaga a conta pra sempre — o progresso vai junto (ON DELETE CASCADE na tabela progress).
+router.delete('/', requireAuth, async (req, res, next) => {
+  try {
+    await pool.query('DELETE FROM users WHERE id = $1', [req.userId]);
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
 module.exports = router;

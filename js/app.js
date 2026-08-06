@@ -121,6 +121,77 @@ document.getElementById('logout-confirm-btn').addEventListener('click', ()=>{
   clearAuth();
   location.reload();
 });
+
+/* ---- Configurações ---- */
+function applyMotionPref(){
+  document.body.classList.toggle('reduce-motion', !!state.reduceMotion);
+}
+function applyDarkMode(){
+  document.body.classList.toggle('dark-mode', !!state.darkMode);
+}
+document.getElementById('open-settings-btn').addEventListener('click', ()=>{
+  document.getElementById('logout-overlay').classList.remove('show');
+  const user = getCachedUser();
+  document.getElementById('settings-name-input').value = (user && user.name) || '';
+  document.getElementById('settings-reduce-motion').checked = !!state.reduceMotion;
+  document.getElementById('settings-dark-mode').checked = !!state.darkMode;
+  document.getElementById('settings-name-feedback').textContent = '';
+  document.getElementById('settings-delete-confirm-area').style.display = 'none';
+  document.getElementById('settings-delete-input').value = '';
+  showPage('settings');
+});
+document.getElementById('settings-back-btn').addEventListener('click', ()=>showPage('trilha'));
+
+document.getElementById('settings-name-save').addEventListener('click', async ()=>{
+  const name = document.getElementById('settings-name-input').value.trim();
+  const fb = document.getElementById('settings-name-feedback');
+  if(!getAuthToken()){
+    fb.className='produce-feedback bad'; fb.textContent = 'Você está sem conta — crie uma pra salvar o nome na nuvem.';
+    return;
+  }
+  try{
+    await apiRequest('/account/name', {method:'PUT', body: JSON.stringify({name})});
+    const user = getCachedUser() || {};
+    user.name = name;
+    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+    updateAccountPill();
+    fb.className='produce-feedback ok'; fb.textContent = '✓ Nome salvo!';
+  }catch(e){
+    fb.className='produce-feedback bad'; fb.textContent = e.message || 'Não foi possível salvar agora.';
+  }
+});
+
+document.getElementById('settings-reduce-motion').addEventListener('change', (e)=>{
+  state.reduceMotion = e.target.checked;
+  saveState();
+  applyMotionPref();
+});
+document.getElementById('settings-dark-mode').addEventListener('change', (e)=>{
+  state.darkMode = e.target.checked;
+  saveState();
+  applyDarkMode();
+});
+
+document.getElementById('settings-delete-btn').addEventListener('click', ()=>{
+  document.getElementById('settings-delete-confirm-area').style.display = 'block';
+});
+document.getElementById('settings-delete-input').addEventListener('input', (e)=>{
+  document.getElementById('settings-delete-confirm-btn').disabled = e.target.value.trim().toUpperCase() !== 'APAGAR';
+});
+document.getElementById('settings-delete-confirm-btn').addEventListener('click', async ()=>{
+  const btn = document.getElementById('settings-delete-confirm-btn');
+  btn.disabled = true; btn.textContent = 'Apagando...';
+  try{
+    if(getAuthToken()) await apiRequest('/account', {method:'DELETE'});
+    clearAuth();
+    localStorage.removeItem(STORAGE_KEY);
+    location.reload();
+  }catch(e){
+    btn.disabled = false; btn.textContent = 'Apagar pra sempre';
+    alert(e.message || 'Não foi possível apagar a conta agora. Tente de novo.');
+  }
+});
+
 document.getElementById('account-avatar-choose').addEventListener('click', ()=>document.getElementById('account-avatar-input').click());
 document.getElementById('account-avatar-input').addEventListener('change', async (e)=>{
   const file = e.target.files[0];
@@ -1119,7 +1190,8 @@ let state = {
   vocabKnown:[], grammarStats:{correct:0,total:0}, convStats:{correct:0,total:0},
   grammarCompleted:[], convCompleted:[], vocabCatCompleted:[], xp:0, streak:0, lastActive:null, badges:[],
   vocabMistakes:[], grammarMistakes:[], dailyXP:0, dailyXPDate:null, lastWelcomeDate:null,
-  xwordCompletedDayId:null, xwordStreak:0, xwordFilledDayId:null, xwordFilledLetters:{}
+  xwordCompletedDayId:null, xwordStreak:0, xwordFilledDayId:null, xwordFilledLetters:{},
+  wodRevealedDate:null, reduceMotion:false, darkMode:false
 };
 function loadState(){
   try{
@@ -1590,7 +1662,7 @@ function openGrammarReview(){
 function renderGlExamples(){
   const wrap = document.getElementById('gl-examples'); wrap.innerHTML='';
   if(!curGrammarLesson.examples || !curGrammarLesson.examples.length) return;
-  wrap.innerHTML = '<h3 style="font-size:15px;color:var(--ink-navy);margin-bottom:10px;">Exemplos</h3>';
+  wrap.innerHTML = '<h3 style="font-size:15px;color:var(--heading-text);margin-bottom:10px;">Exemplos</h3>';
   curGrammarLesson.examples.forEach(pair=>{
     const en=pair[0], pt=pair[1];
     const row = document.createElement('div'); row.className='ex-row';
@@ -1662,7 +1734,7 @@ function renderGrammarQuiz(){
   document.getElementById('topbar-hearts').textContent = curHearts;
   wrap.innerHTML = '';
   const toolbar = document.createElement('div'); toolbar.className='quiz-toolbar';
-  toolbar.innerHTML = '<h3 style="font-size:15px;color:var(--ink-navy);margin:0;">'+(isReview?'Revisão':'Pratique ('+picked.length+' atividades)')+'</h3>'+
+  toolbar.innerHTML = '<h3 style="font-size:15px;color:var(--heading-text);margin:0;">'+(isReview?'Revisão':'Pratique ('+picked.length+' atividades)')+'</h3>'+
     '<div style="display:flex;align-items:center;gap:8px;">'+renderHeartsRow()+(isReview?'':'<button class="retry-btn" id="gl-retry-quiz">🔀 Sortear de novo</button>')+'</div>';
   wrap.appendChild(toolbar);
   if(!isReview) document.getElementById('gl-retry-quiz').addEventListener('click', renderGrammarQuiz);
@@ -1792,7 +1864,7 @@ function wordDiffHtml(userText, correctText){
 }
 function renderGrammarProduce(){
   const wrap = document.getElementById('gl-produce');
-  wrap.innerHTML = '<h3 style="font-size:15px;color:var(--ink-navy);margin:18px 0 10px;">Produza (digite a resposta)</h3>';
+  wrap.innerHTML = '<h3 style="font-size:15px;color:var(--heading-text);margin:18px 0 10px;">Produza (digite a resposta)</h3>';
   curGrammarLesson.produce.forEach((ex,ei)=>{
     const box = document.createElement('div'); box.className='quiz-q';
     const inputId = 'glp-input-'+ei, fbId = 'glp-fb-'+ei, btnId='glp-btn-'+ei;
@@ -1863,7 +1935,7 @@ function checkConvComplete(){
 }
 function renderConvQuiz(){
   const wrap = document.getElementById('cd-quiz');
-  wrap.innerHTML = '<h3 style="font-size:15px;color:var(--ink-navy);margin-bottom:10px;">Teste rápido</h3>';
+  wrap.innerHTML = '<h3 style="font-size:15px;color:var(--heading-text);margin-bottom:10px;">Teste rápido</h3>';
   curConvDialog.quiz.forEach((q,qi)=>{
     const qdiv = document.createElement('div'); qdiv.className='quiz-q';
     qdiv.innerHTML = '<div class="qtext">'+(qi+1)+'. '+q.q+'</div>';
@@ -1983,7 +2055,7 @@ function renderArmCountdown(){
     '<div class="armgame-box">'+
       '<div style="font-size:34px;">🤜🤛</div>'+
       '<div style="font-family:\'Nunito\',sans-serif;font-size:13px;color:var(--text-soft);margin:8px 0 4px;">Você vai jogar contra</div>'+
-      '<div style="font-family:\'Baloo 2\',sans-serif;font-size:22px;color:var(--ink-navy);font-weight:800;margin-bottom:16px;">'+opponentName+'</div>'+
+      '<div style="font-family:\'Baloo 2\',sans-serif;font-size:22px;color:var(--heading-text);font-weight:800;margin-bottom:16px;">'+opponentName+'</div>'+
       '<div class="armgame-countdown-num pop" id="armgame-countdown-num">'+count+'</div>'+
     '</div>';
   const timer = setInterval(()=>{
@@ -2007,7 +2079,7 @@ function renderArmGameSetup(){
     '<button class="back-btn" id="armgame-back-btn">← Jogos</button>'+
     '<div class="armgame-box armgame-setup">'+
       '<div style="font-size:40px;margin-bottom:6px;">🤜🤛</div>'+
-      '<h3 style="font-family:\'Baloo 2\',sans-serif;color:var(--ink-navy);margin:0 0 4px;">Braço de Ferro Online</h3>'+
+      '<h3 style="font-family:\'Baloo 2\',sans-serif;color:var(--heading-text);margin:0 0 4px;">Braço de Ferro Online</h3>'+
       '<p style="font-family:\'Nunito\',sans-serif;font-size:12px;color:var(--text-soft);margin:0 0 16px;">Jogue em tempo real contra outra pessoa qualquer, em outro aparelho — os dois recebem a mesma pergunta e quem acertar mais rápido ganha a rodada. Mas cuidado: se o outro interromper sua sequência, ela zera! Quem acertar 3 seguidas primeiro, vence.</p>'+
       '<label>Seu nome</label>'+
       '<input type="text" id="armgame-myname" placeholder="Seu nome" maxlength="16">'+
@@ -2407,7 +2479,7 @@ function renderCrosswordLocked(dayId){
     '<button class="back-btn" id="xword-back-btn">← Jogos</button>'+
     '<div class="xword-box" style="text-align:center;">'+
       '<div style="font-size:40px;margin-bottom:6px;">🧩✅</div>'+
-      '<h3 style="font-family:\'Baloo 2\',sans-serif;color:var(--ink-navy);margin:0 0 6px;">Cruzadinha de hoje concluída!</h3>'+
+      '<h3 style="font-family:\'Baloo 2\',sans-serif;color:var(--heading-text);margin:0 0 6px;">Cruzadinha de hoje concluída!</h3>'+
       (streak>1 ? '<p style="font-family:\'Nunito\',sans-serif;font-size:13px;color:var(--mustard-dark);font-weight:800;margin:0 0 10px;">🔥 '+streak+' dias seguidos</p>' : '')+
       '<p style="font-family:\'Nunito\',sans-serif;font-size:12px;color:var(--text-soft);margin:0 0 14px;">Só tem uma por dia — a próxima libera em:</p>'+
       '<div class="armgame-countdown-num" id="xword-countdown" style="font-size:32px;">--:--:--</div>'+
@@ -2666,15 +2738,67 @@ function xwordCheck(){
 ========================================================= */
 function startApp(){
   loadState();
+  applyMotionPref();
+  applyDarkMode();
   updateStreak();
   renderVocabMenu();
   renderGrammarMenu();
   renderConvMenu();
   renderPath();
   renderGamesMenu();
+  renderWordOfDay();
   updateStats();
   updateAccountPill();
   maybeShowWelcomeBack();
+}
+
+/* =========================================================
+   PALAVRA DO DIA
+========================================================= */
+function wodDayId(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function wodPickWord(dayId){
+  const pool = [];
+  Object.values(VOCAB).forEach(cat=>{ cat.words.forEach(w=>pool.push({en:w[0], pt:w[1]})); });
+  const rng = xwordHashSeed('wod-'+dayId);
+  const idx = Math.floor(rng()*pool.length);
+  return pool[idx];
+}
+function renderWordOfDay(){
+  const card = document.getElementById('word-of-day-card');
+  if(!card) return;
+  const dayId = wodDayId();
+  const word = wodPickWord(dayId);
+  const alreadyRevealed = state.wodRevealedDate === dayId;
+
+  card.innerHTML =
+    '<div class="wod-card">'+
+      '<div class="wod-label">📌 Palavra do dia</div>'+
+      '<div class="wod-row">'+
+        '<div class="wod-word">'+word.en+'</div>'+
+        '<button class="wod-spk" id="wod-spk-btn">🔊</button>'+
+      '</div>'+
+      '<div class="wod-reveal-area" id="wod-reveal-area">'+
+        (alreadyRevealed
+          ? '<div class="wod-meaning">Significado: <b>'+word.pt+'</b></div><div class="wod-done-tag">✓ Já vista hoje</div>'
+          : '<button class="wod-reveal-btn" id="wod-reveal-btn">Revelar significado (+5 XP)</button>')+
+      '</div>'+
+    '</div>';
+
+  document.getElementById('wod-spk-btn').addEventListener('click', ()=>speak(word.en));
+  const revealBtn = document.getElementById('wod-reveal-btn');
+  if(revealBtn){
+    revealBtn.addEventListener('click', ()=>{
+      document.getElementById('wod-reveal-area').innerHTML = '<div class="wod-meaning">Significado: <b>'+word.pt+'</b></div>';
+      if(state.wodRevealedDate !== dayId){
+        state.wodRevealedDate = dayId;
+        addXP(5);
+        saveState();
+      }
+    });
+  }
 }
 
 function maybeShowWelcomeBack(){
