@@ -1191,7 +1191,7 @@ let state = {
   grammarCompleted:[], convCompleted:[], vocabCatCompleted:[], xp:0, streak:0, lastActive:null, badges:[],
   vocabMistakes:[], grammarMistakes:[], dailyXP:0, dailyXPDate:null, lastWelcomeDate:null,
   xwordCompletedDayId:null, xwordStreak:0, xwordFilledDayId:null, xwordFilledLetters:{},
-  wodRevealedDate:null, reduceMotion:false, darkMode:false
+  wodRevealedDate:null, reduceMotion:false, darkMode:false, memoryBestTime:null
 };
 function loadState(){
   try{
@@ -1999,7 +1999,8 @@ function renderGamesMenu(){
   const games = [
     { icon:'🤜🤛', title:'Braço de Ferro', desc:'1x1 online, em tempo real — melhor de 5', onOpen: renderArmGameSetup },
     { icon:'🧩', title:'Palavras Cruzadas', desc:'1 nova por dia — reseta às 18h', onOpen: renderCrosswordGame },
-    { icon:'🎯', title:'Forca', desc:'Adivinhe a palavra em inglês antes de errar demais', onOpen: renderHangmanSetup }
+    { icon:'🎯', title:'Forca', desc:'Adivinhe a palavra em inglês antes de errar demais', onOpen: renderHangmanSetup },
+    { icon:'🧠', title:'Jogo da Memória', desc:'Case a palavra em inglês com a tradução — bata seu recorde', onOpen: renderMemorySetup }
     // novos jogos entram aqui depois, no mesmo formato
   ];
 
@@ -2767,7 +2768,7 @@ function renderHangmanSetup(){
 function hangNewGame(){
   const pool = buildHangmanWordPool();
   const pick = pool[Math.floor(Math.random()*pool.length)];
-  hangGame = { word: pick.en, clue: pick.pt, guessed: new Set(), wrongCount: 0, maxWrong: 6, finished:false };
+  hangGame = { word: pick.en, clue: pick.pt, guessed: new Set(), wrongCount: 0, maxWrong: 6, finished:false, clueRevealed:false };
   renderHangmanGame();
 }
 
@@ -2790,7 +2791,7 @@ function renderHangmanGame(){
     '<button class="back-btn" id="hang-back-btn">← Jogos</button>'+
     '<div class="hang-box">'+
       '<div class="hang-hearts" id="hang-hearts">'+hangHeartsHtml()+'</div>'+
-      '<div class="hang-clue">💡 '+hangGame.clue+'</div>'+
+      '<div class="hang-clue" id="hang-clue">🔒 A dica libera quando sobrar 1 vida</div>'+
       '<div class="hang-word" id="hang-word">'+hangWordDisplay()+'</div>'+
       '<div class="hang-status" id="hang-status">&nbsp;</div>'+
       '<div class="hang-keyboard" id="hang-keyboard"></div>'+
@@ -2816,6 +2817,12 @@ function hangGuess(letter, btnEl){
   document.getElementById('hang-word').textContent = hangWordDisplay();
   document.getElementById('hang-hearts').textContent = hangHeartsHtml();
 
+  const livesLeft = hangGame.maxWrong - hangGame.wrongCount;
+  if(!hangGame.clueRevealed && livesLeft <= 1 && livesLeft > 0){
+    hangGame.clueRevealed = true;
+    document.getElementById('hang-clue').textContent = '💡 '+hangGame.clue;
+  }
+
   if(hangIsWon()){
     hangGame.finished = true;
     document.getElementById('hang-status').innerHTML = '🎉 Você acertou! <b>'+hangGame.word+'</b>';
@@ -2838,6 +2845,128 @@ function hangShowPlayAgain(){
   btn.textContent = 'Jogar de novo';
   btn.id = 'hang-again-btn';
   btn.addEventListener('click', hangNewGame);
+  box.appendChild(btn);
+}
+
+/* =========================================================
+   JOGO: MEMÓRIA
+========================================================= */
+let memGame = null;
+let memTimerInterval = null;
+
+function buildMemoryWordPool(){
+  const pool = [];
+  Object.values(VOCAB).forEach(cat=>{
+    cat.words.forEach(w=>{ if(w[0].length<=10) pool.push({en:w[0], pt:w[1]}); }); // evita palavra gigante que nao cabe no cartao
+  });
+  return pool;
+}
+function memShuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+function memFormatTime(sec){
+  const m = Math.floor(sec/60), s = sec%60;
+  return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+function renderMemorySetup(){
+  clearInterval(memTimerInterval);
+  const wrap = document.getElementById('extras-games');
+  const best = state.memoryBestTime;
+  wrap.innerHTML =
+    '<button class="back-btn" id="mem-back-btn">← Jogos</button>'+
+    '<div class="hang-box mem-setup">'+
+      '<div style="font-size:40px;margin-bottom:6px;">🧠</div>'+
+      '<h3 style="font-family:\'Baloo 2\',sans-serif;color:var(--heading-text);margin:0 0 4px;">Jogo da Memória</h3>'+
+      '<p style="font-family:\'Nunito\',sans-serif;font-size:12px;color:var(--text-soft);margin:0 0 10px;">Vire duas cartas por vez e ache os 6 pares (palavra em inglês + tradução). Quanto mais rápido, melhor!</p>'+
+      (best ? '<div class="mem-best">🏆 Seu recorde: '+memFormatTime(best)+'</div>' : '')+
+      '<button class="btn btn-primary" id="mem-start-btn" style="width:100%;margin-top:10px;">Jogar 🧠</button>'+
+    '</div>';
+  document.getElementById('mem-back-btn').addEventListener('click', renderGamesMenu);
+  document.getElementById('mem-start-btn').addEventListener('click', memNewGame);
+}
+function memNewGame(){
+  const pool = memShuffle(buildMemoryWordPool()).slice(0,6);
+  const cards = [];
+  pool.forEach((pair,idx)=>{
+    cards.push({ id:'en'+idx, type:'en', text:pair.en, pairId:idx, matched:false });
+    cards.push({ id:'pt'+idx, type:'pt', text:pair.pt, pairId:idx, matched:false });
+  });
+  memGame = { cards: memShuffle(cards), flippedIds:[], matchedCount:0, totalPairs:pool.length, seconds:0, locked:false };
+  clearInterval(memTimerInterval);
+  memTimerInterval = setInterval(()=>{
+    memGame.seconds++;
+    const t = document.getElementById('mem-timer');
+    if(t) t.textContent = memFormatTime(memGame.seconds);
+  }, 1000);
+  renderMemoryGame();
+}
+function renderMemoryGame(){
+  const wrap = document.getElementById('extras-games');
+  wrap.innerHTML =
+    '<button class="back-btn" id="mem-back-btn">← Jogos</button>'+
+    '<div class="hang-box">'+
+      '<div class="mem-timer" id="mem-timer">'+memFormatTime(memGame.seconds)+'</div>'+
+      '<div class="mem-grid" id="mem-grid"></div>'+
+    '</div>';
+  document.getElementById('mem-back-btn').addEventListener('click', ()=>{ clearInterval(memTimerInterval); renderGamesMenu(); });
+  const grid = document.getElementById('mem-grid');
+  memGame.cards.forEach(card=>{
+    const el = document.createElement('button');
+    el.className = 'mem-card';
+    el.id = 'mem-card-'+card.id;
+    el.innerHTML = '<span class="mem-card-back">🐾</span><span class="mem-card-front">'+card.text+'</span>';
+    el.addEventListener('click', ()=>memFlip(card.id));
+    grid.appendChild(el);
+  });
+}
+function memFlip(cardId){
+  if(memGame.locked) return;
+  const card = memGame.cards.find(c=>c.id===cardId);
+  if(!card || card.matched || memGame.flippedIds.includes(cardId)) return;
+  memGame.flippedIds.push(cardId);
+  document.getElementById('mem-card-'+cardId).classList.add('mem-flipped');
+
+  if(memGame.flippedIds.length===2){
+    memGame.locked = true;
+    const [id1,id2] = memGame.flippedIds;
+    const c1 = memGame.cards.find(c=>c.id===id1), c2 = memGame.cards.find(c=>c.id===id2);
+    if(c1.pairId===c2.pairId && c1.type!==c2.type){
+      c1.matched = true; c2.matched = true;
+      document.getElementById('mem-card-'+id1).classList.add('mem-matched');
+      document.getElementById('mem-card-'+id2).classList.add('mem-matched');
+      memGame.matchedCount++;
+      memGame.flippedIds = [];
+      memGame.locked = false;
+      if(memGame.matchedCount===memGame.totalPairs) memFinish();
+    } else {
+      setTimeout(()=>{
+        const el1 = document.getElementById('mem-card-'+id1), el2 = document.getElementById('mem-card-'+id2);
+        if(el1) el1.classList.remove('mem-flipped');
+        if(el2) el2.classList.remove('mem-flipped');
+        memGame.flippedIds = [];
+        memGame.locked = false;
+      }, 900);
+    }
+  }
+}
+function memFinish(){
+  clearInterval(memTimerInterval);
+  const isNewBest = !state.memoryBestTime || memGame.seconds < state.memoryBestTime;
+  if(isNewBest){ state.memoryBestTime = memGame.seconds; saveState(); }
+  confettiBurst(30);
+  addXP(12);
+  const box = document.querySelector('.hang-box');
+  const msg = document.createElement('div');
+  msg.className = 'mem-finish';
+  msg.innerHTML = '🎉 Terminou em <b>'+memFormatTime(memGame.seconds)+'</b>'+(isNewBest?' — novo recorde! 🏆':'');
+  box.appendChild(msg);
+  const btn = document.createElement('button');
+  btn.className = 'btn btn-primary';
+  btn.style.width = '100%'; btn.style.marginTop = '10px';
+  btn.textContent = 'Jogar de novo';
+  btn.addEventListener('click', memNewGame);
   box.appendChild(btn);
 }
 

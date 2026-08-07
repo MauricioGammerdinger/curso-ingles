@@ -699,3 +699,16 @@
   .hang-key:disabled{cursor:default;}
   .hang-key-correct{background:var(--teal);color:#fff;border-color:var(--teal);}
   .hang-key-wrong{background:var(--coral);color:#fff;border-color:var(--coral);opacity:0.6;}
+
+  /* ---------- JOGO: MEMÓRIA ---------- */
+  .mem-timer{text-align:center;font-family:'Baloo 2',sans-serif;font-size:20px;color:var(--heading-text);margin-bottom:14px;}
+  .mem-best{font-family:'Nunito',sans-serif;font-size:13px;color:var(--mustard-dark);font-weight:700;}
+  .mem-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .mem-card{position:relative;aspect-ratio:1/1;border:none;background:none;cursor:pointer;perspective:600px;padding:0;}
+  .mem-card-back, .mem-card-front{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:10px;backface-visibility:hidden;transition:transform .4s;font-family:'Nunito',sans-serif;font-weight:700;font-size:11px;text-align:center;padding:4px;box-sizing:border-box;line-height:1.2;}
+  .mem-card-back{background:var(--ink-navy);color:#fff;font-size:20px;transform:rotateY(0deg);}
+  .mem-card-front{background:var(--paper);border:2px solid var(--teal);color:var(--heading-text);transform:rotateY(180deg);}
+  .mem-card.mem-flipped .mem-card-back{transform:rotateY(180deg);}
+  .mem-card.mem-flipped .mem-card-front{transform:rotateY(360deg);}
+  .mem-card.mem-matched .mem-card-front{background:#DFF5DE;border-color:var(--teal);opacity:0.85;}
+  .mem-finish{font-family:'Nunito',sans-serif;font-size:14px;text-align:center;margin-top:14px;color:var(--text-dark);}
