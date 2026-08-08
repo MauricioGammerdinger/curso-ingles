@@ -2000,7 +2000,8 @@ function renderGamesMenu(){
     { icon:'🤜🤛', title:'Braço de Ferro', desc:'1x1 online, em tempo real — melhor de 5', onOpen: renderArmGameSetup },
     { icon:'🧩', title:'Palavras Cruzadas', desc:'1 nova por dia — reseta às 18h', onOpen: renderCrosswordGame },
     { icon:'🎯', title:'Forca', desc:'Adivinhe a palavra em inglês antes de errar demais', onOpen: renderHangmanSetup },
-    { icon:'🧠', title:'Jogo da Memória', desc:'Case a palavra em inglês com a tradução — bata seu recorde', onOpen: renderMemorySetup }
+    { icon:'🧠', title:'Jogo da Memória', desc:'Case a palavra em inglês com a tradução — bata seu recorde', onOpen: renderMemorySetup },
+    { icon:'📝', title:'Ordene a Frase', desc:'Toque nas palavras embaralhadas na ordem certa', onOpen: renderOrderSetup }
     // novos jogos entram aqui depois, no mesmo formato
   ];
 
@@ -2968,6 +2969,123 @@ function memFinish(){
   btn.textContent = 'Jogar de novo';
   btn.addEventListener('click', memNewGame);
   box.appendChild(btn);
+}
+
+/* =========================================================
+   JOGO: ORDENE A FRASE
+========================================================= */
+let orderGame = null; // { words:[palavras corretas em ordem], pt, answer:[], pool:[], finished }
+
+function buildOrderSentencePool(){
+  const pool = [];
+  CONVERSATION.forEach(dialog=>{
+    dialog.lines.forEach(line=>{
+      const en = line[1], pt = line[2];
+      const wordCount = en.trim().split(/\s+/).length;
+      if(wordCount>=3 && wordCount<=7) pool.push({en, pt});
+    });
+  });
+  return pool;
+}
+function orderShuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+function renderOrderSetup(){
+  const wrap = document.getElementById('extras-games');
+  wrap.innerHTML =
+    '<button class="back-btn" id="order-back-btn">← Jogos</button>'+
+    '<div class="hang-box order-setup">'+
+      '<div style="font-size:40px;margin-bottom:6px;">📝</div>'+
+      '<h3 style="font-family:\'Baloo 2\',sans-serif;color:var(--heading-text);margin:0 0 4px;">Ordene a Frase</h3>'+
+      '<p style="font-family:\'Nunito\',sans-serif;font-size:12px;color:var(--text-soft);margin:0 0 10px;">As palavras de uma frase real (dos diálogos) aparecem embaralhadas. Toque nelas na ordem certa pra remontar a frase.</p>'+
+      '<button class="btn btn-primary" id="order-start-btn" style="width:100%;margin-top:6px;">Jogar 📝</button>'+
+    '</div>';
+  document.getElementById('order-back-btn').addEventListener('click', renderGamesMenu);
+  document.getElementById('order-start-btn').addEventListener('click', orderNewRound);
+}
+function orderNewRound(){
+  const pool = buildOrderSentencePool();
+  const pick = pool[Math.floor(Math.random()*pool.length)];
+  const words = pick.en.trim().split(/\s+/);
+  orderGame = { words, pt: pick.pt, answer: [], pool: orderShuffle(words.map((w,i)=>({word:w, origIdx:i}))), finished:false };
+  renderOrderGame();
+}
+function renderOrderGame(){
+  const wrap = document.getElementById('extras-games');
+  wrap.innerHTML =
+    '<button class="back-btn" id="order-back-btn">← Jogos</button>'+
+    '<div class="hang-box">'+
+      '<div class="order-clue">💡 '+orderGame.pt+'</div>'+
+      '<div class="order-answer" id="order-answer"></div>'+
+      '<div class="order-pool" id="order-pool"></div>'+
+      '<div class="order-status" id="order-status">&nbsp;</div>'+
+      '<button class="btn btn-primary" id="order-check-btn" style="width:100%;">Verificar</button>'+
+    '</div>';
+  document.getElementById('order-back-btn').addEventListener('click', renderGamesMenu);
+  document.getElementById('order-check-btn').addEventListener('click', orderCheck);
+  orderRenderChips();
+}
+function orderRenderChips(){
+  const answerEl = document.getElementById('order-answer');
+  const poolEl = document.getElementById('order-pool');
+  answerEl.innerHTML = '';
+  poolEl.innerHTML = '';
+  orderGame.answer.forEach((item, idx)=>{
+    const chip = document.createElement('button');
+    chip.className = 'order-chip order-chip-answer';
+    chip.textContent = item.word;
+    chip.addEventListener('click', ()=>{
+      if(orderGame.finished) return;
+      orderGame.pool.push(item);
+      orderGame.answer.splice(idx,1);
+      orderRenderChips();
+    });
+    answerEl.appendChild(chip);
+  });
+  if(!orderGame.answer.length){ answerEl.innerHTML = '<span class="order-answer-placeholder">Toque nas palavras abaixo, na ordem certa</span>'; }
+  orderGame.pool.forEach((item)=>{
+    const chip = document.createElement('button');
+    chip.className = 'order-chip';
+    chip.textContent = item.word;
+    chip.addEventListener('click', ()=>{
+      if(orderGame.finished) return;
+      orderGame.answer.push(item);
+      orderGame.pool = orderGame.pool.filter(p=>p!==item);
+      orderRenderChips();
+    });
+    poolEl.appendChild(chip);
+  });
+}
+function orderCheck(){
+  const built = orderGame.answer.map(i=>i.word).join(' ');
+  const correct = orderGame.words.join(' ');
+  const statusEl = document.getElementById('order-status');
+  if(orderGame.pool.length>0){
+    statusEl.className = 'order-status bad';
+    statusEl.textContent = 'Ainda faltam palavras — usa todas elas!';
+    return;
+  }
+  if(built === correct){
+    orderGame.finished = true;
+    statusEl.className = 'order-status ok';
+    statusEl.innerHTML = '🎉 Certinho!';
+    confettiBurst(25);
+    addXP(8);
+    document.getElementById('order-check-btn').style.display='none';
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-primary';
+    btn.style.width='100%'; btn.style.marginTop='10px';
+    btn.textContent = 'Próxima frase →';
+    btn.addEventListener('click', orderNewRound);
+    document.querySelector('.hang-box').appendChild(btn);
+  } else {
+    statusEl.className = 'order-status bad';
+    statusEl.textContent = 'Quase — a ordem ainda não tá certa. Continue ajustando!';
+    const answerEl = document.getElementById('order-answer');
+    answerEl.classList.remove('order-shake'); void answerEl.offsetWidth; answerEl.classList.add('order-shake');
+  }
 }
 
 /* =========================================================
