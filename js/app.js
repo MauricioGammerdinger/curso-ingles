@@ -1201,31 +1201,31 @@ function positionPathCat(nodeWrapEl){
     avatar.id = 'path-cat-avatar';
     avatar.className = 'path-cat-avatar';
     avatar.innerHTML = '<svg viewBox="0 0 300 380" xmlns="http://www.w3.org/2000/svg">'+
-      '<path class="tail" d="M225 300 C 278 288, 286 205, 248 158 C 272 210, 262 268, 218 278 Z" fill="#15161c"/>'+
-      '<ellipse cx="98" cy="335" rx="24" ry="16" fill="#15161c"/>'+
-      '<ellipse cx="202" cy="335" rx="24" ry="16" fill="#15161c"/>'+
-      '<ellipse cx="150" cy="270" rx="98" ry="88" fill="#15161c"/>'+
-      '<ellipse cx="150" cy="298" rx="50" ry="60" fill="#f4f4f2"/>'+
-      '<rect x="112" y="330" width="26" height="38" rx="13" fill="#f4f4f2"/>'+
-      '<rect x="162" y="330" width="26" height="38" rx="13" fill="#f4f4f2"/>'+
-      '<path d="M 80 110 L 62 20 L 135 90 Z" fill="#15161c"/>'+
+      '<path class="tail" d="M225 300 C 278 288, 286 205, 248 158 C 272 210, 262 268, 218 278 Z" fill="var(--cat-dark, #15161c)"/>'+
+      '<ellipse cx="98" cy="335" rx="24" ry="16" fill="var(--cat-dark, #15161c)"/>'+
+      '<ellipse cx="202" cy="335" rx="24" ry="16" fill="var(--cat-dark, #15161c)"/>'+
+      '<ellipse cx="150" cy="270" rx="98" ry="88" fill="var(--cat-dark, #15161c)"/>'+
+      '<ellipse cx="150" cy="298" rx="50" ry="60" fill="var(--cat-light, #f4f4f2)"/>'+
+      '<rect x="112" y="330" width="26" height="38" rx="13" fill="var(--cat-light, #f4f4f2)"/>'+
+      '<rect x="162" y="330" width="26" height="38" rx="13" fill="var(--cat-light, #f4f4f2)"/>'+
+      '<path d="M 80 110 L 62 20 L 135 90 Z" fill="var(--cat-dark, #15161c)"/>'+
       '<path d="M 88 98 L 78 46 L 122 86 Z" fill="#4a2f38"/>'+
-      '<path d="M 220 110 L 238 20 L 165 90 Z" fill="#15161c"/>'+
+      '<path d="M 220 110 L 238 20 L 165 90 Z" fill="var(--cat-dark, #15161c)"/>'+
       '<path d="M 212 98 L 222 46 L 178 86 Z" fill="#4a2f38"/>'+
-      '<circle cx="150" cy="150" r="92" fill="#15161c"/>'+
+      '<circle cx="150" cy="150" r="92" fill="var(--cat-dark, #15161c)"/>'+
       '<path d="M 92 214 Q 150 242 208 214 L 200 234 Q 150 252 100 234 Z" fill="var(--mustard, #FFC800)"/>'+
-      '<ellipse cx="108" cy="144" rx="23" ry="17" fill="#f4f4f2"/>'+
-      '<ellipse cx="192" cy="144" rx="23" ry="17" fill="#f4f4f2"/>'+
-      '<circle cx="114" cy="144" r="13" fill="#8fd44a"/>'+
-      '<circle cx="186" cy="144" r="13" fill="#8fd44a"/>'+
+      '<ellipse cx="108" cy="144" rx="23" ry="17" fill="var(--cat-light, #f4f4f2)"/>'+
+      '<ellipse cx="192" cy="144" rx="23" ry="17" fill="var(--cat-light, #f4f4f2)"/>'+
+      '<circle cx="114" cy="144" r="13" fill="var(--cat-eye, #8fd44a)"/>'+
+      '<circle cx="186" cy="144" r="13" fill="var(--cat-eye, #8fd44a)"/>'+
       '<ellipse cx="114" cy="144" rx="4" ry="12.5" fill="#111"/>'+
       '<ellipse cx="186" cy="144" rx="4" ry="12.5" fill="#111"/>'+
       '<circle cx="117" cy="139" r="3" fill="#fff"/>'+
       '<circle cx="189" cy="139" r="3" fill="#fff"/>'+
-      '<path d="M 84 136 Q 108 120 132 134 L 132 142 Q 108 130 84 146 Z" fill="#15161c"/>'+
-      '<path d="M 168 134 Q 192 120 216 136 L 216 146 Q 192 130 168 142 Z" fill="#15161c"/>'+
+      '<path d="M 84 136 Q 108 120 132 134 L 132 142 Q 108 130 84 146 Z" fill="var(--cat-dark, #15161c)"/>'+
+      '<path d="M 168 134 Q 192 120 216 136 L 216 146 Q 192 130 168 142 Z" fill="var(--cat-dark, #15161c)"/>'+
       '<path d="M 141 180 L 159 180 L 150 192 Z" fill="#4a2f38"/>'+
-      '<path d="M 126 196 Q 150 208 174 196" stroke="#f4f4f2" stroke-width="5" fill="none" stroke-linecap="round"/>'+
+      '<path d="M 126 196 Q 150 208 174 196" stroke="var(--cat-light, #f4f4f2)" stroke-width="5" fill="none" stroke-linecap="round"/>'+
       '</svg>';
     container.appendChild(avatar);
   }
@@ -1274,7 +1274,8 @@ let state = {
   xwordCompletedDayId:null, xwordStreak:0, xwordFilledDayId:null, xwordFilledLetters:{},
   wodRevealedDate:null, reduceMotion:false, darkMode:false, memoryBestTime:null,
   hangmanWins:0, orderWins:0,
-  patinhas:20, streakFreezes:0, hangmanHints:0, ownedFrames:[], equippedFrame:null
+  patinhas:20, streakFreezes:0, hangmanHints:0, ownedFrames:[], equippedFrame:null,
+  ownedCatSkins:[], equippedCatSkin:null
 };
 function loadState(){
   try{
@@ -3251,12 +3252,29 @@ const SHOP_PACKS = [
   { id:'pack_m', icon:'🐾', amount:300, price:'R$ 9,90' },
   { id:'pack_g', icon:'🐾', amount:800, price:'R$ 19,90' }
 ];
+const CAT_SKINS = {
+  default: { name:'Preto (padrão)', dark:'#15161c', light:'#f4f4f2', eye:'#8fd44a' },
+  ginger:  { name:'Gengibre', dark:'#E8823C', light:'#FFEBD6', eye:'#5B8C3A' },
+  white:   { name:'Branco', dark:'#F4F4F2', light:'#FFFFFF', eye:'#4A9FD8' },
+  tabby:   { name:'Rajado', dark:'#8A8D91', light:'#E7E7E7', eye:'#C9A227' }
+};
+function applyCatSkin(){
+  const skinId = state.equippedCatSkin || 'default';
+  const skin = CAT_SKINS[skinId] || CAT_SKINS.default;
+  document.documentElement.style.setProperty('--cat-dark', skin.dark);
+  document.documentElement.style.setProperty('--cat-light', skin.light);
+  document.documentElement.style.setProperty('--cat-eye', skin.eye);
+}
+
 const SHOP_ITEMS = [
   { id:'streak_freeze', icon:'❄️', name:'Congela-Sequência', desc:'Protege sua sequência automaticamente se você esquecer de abrir o app 1 dia.', price:50, type:'consumable', countField:'streakFreezes' },
   { id:'heart_refill', icon:'💛', name:'Recarga de Corações', desc:'Enche seus corações na hora.', price:25, type:'instant' },
   { id:'hangman_hint', icon:'💡', name:'Dica Grátis (Forca)', desc:'Libera a dica da Forca sem precisar chegar em 1 vida.', price:15, type:'consumable', countField:'hangmanHints' },
   { id:'frame_gold', icon:'🖼️', name:'Moldura Dourada', desc:'Um anel dourado ao redor da sua foto de perfil.', price:80, type:'frame', frameId:'gold' },
-  { id:'frame_rainbow', icon:'🌈', name:'Moldura Arco-Íris', desc:'Um contorno colorido ao redor da sua foto.', price:80, type:'frame', frameId:'rainbow' }
+  { id:'frame_rainbow', icon:'🌈', name:'Moldura Arco-Íris', desc:'Um contorno colorido ao redor da sua foto.', price:80, type:'frame', frameId:'rainbow' },
+  { id:'skin_ginger', icon:'🐈', name:'Gato Gengibre', desc:'Troca a cor do gatinho que segue você na trilha.', price:60, type:'catskin', skinId:'ginger' },
+  { id:'skin_white', icon:'🐈', name:'Gato Branco', desc:'Troca a cor do gatinho que segue você na trilha.', price:60, type:'catskin', skinId:'white' },
+  { id:'skin_tabby', icon:'🐈', name:'Gato Rajado', desc:'Troca a cor do gatinho que segue você na trilha.', price:60, type:'catskin', skinId:'tabby' }
 ];
 
 function renderShopPage(){
@@ -3309,6 +3327,14 @@ function renderShopItemsTab(){
       } else {
         actionHtml = '<button class="shop-buy-btn" data-buy="'+item.id+'">Comprar</button>';
       }
+    } else if(item.type==='catskin'){
+      const owned = state.ownedCatSkins.includes(item.skinId);
+      if(owned){
+        const equipped = state.equippedCatSkin===item.skinId;
+        actionHtml = '<button class="shop-equip-btn'+(equipped?' equipped':'')+'" data-equip-skin="'+item.skinId+'">'+(equipped?'✓ Equipado':'Equipar')+'</button>';
+      } else {
+        actionHtml = '<button class="shop-buy-btn" data-buy="'+item.id+'">Comprar</button>';
+      }
     } else if(item.type==='consumable'){
       const owned = state[item.countField]||0;
       actionHtml = '<button class="shop-buy-btn" data-buy="'+item.id+'">Comprar'+(owned>0?' (tem '+owned+')':'')+'</button>';
@@ -3334,6 +3360,14 @@ function renderShopItemsTab(){
       renderShopItemsTab();
     });
   });
+  content.querySelectorAll('[data-equip-skin]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      state.equippedCatSkin = (state.equippedCatSkin===btn.dataset.equipSkin) ? null : btn.dataset.equipSkin;
+      saveState();
+      applyCatSkin();
+      renderShopItemsTab();
+    });
+  });
 }
 function shopBuyItem(itemId){
   const item = SHOP_ITEMS.find(i=>i.id===itemId);
@@ -3347,6 +3381,10 @@ function shopBuyItem(itemId){
     state.ownedFrames.push(item.frameId);
     state.equippedFrame = item.frameId;
     updateAccountPill();
+  } else if(item.type==='catskin'){
+    state.ownedCatSkins.push(item.skinId);
+    state.equippedCatSkin = item.skinId;
+    applyCatSkin();
   } else if(item.type==='consumable'){
     state[item.countField] = (state[item.countField]||0) + 1;
   } else if(item.type==='instant' && item.id==='heart_refill'){
@@ -3367,6 +3405,7 @@ function startApp(){
   loadState();
   applyMotionPref();
   applyDarkMode();
+  applyCatSkin();
   updateStreak();
   renderVocabMenu();
   renderGrammarMenu();
