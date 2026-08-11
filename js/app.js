@@ -1191,7 +1191,8 @@ let state = {
   grammarCompleted:[], convCompleted:[], vocabCatCompleted:[], xp:0, streak:0, lastActive:null, badges:[],
   vocabMistakes:[], grammarMistakes:[], dailyXP:0, dailyXPDate:null, lastWelcomeDate:null,
   xwordCompletedDayId:null, xwordStreak:0, xwordFilledDayId:null, xwordFilledLetters:{},
-  wodRevealedDate:null, reduceMotion:false, darkMode:false, memoryBestTime:null
+  wodRevealedDate:null, reduceMotion:false, darkMode:false, memoryBestTime:null,
+  hangmanWins:0, orderWins:0
 };
 function loadState(){
   try{
@@ -1316,6 +1317,7 @@ function showPage(id){
       (id.startsWith('conv') && t.dataset.page==='conv-menu'));
   });
   if(id!=='grammar-lesson'){ curHearts = MAX_HEARTS; document.getElementById('topbar-hearts').textContent = curHearts; }
+  if(id==='ranking') renderRankingPage();
   window.scrollTo(0,0);
 }
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>showPage(t.dataset.page)));
@@ -2829,6 +2831,8 @@ function hangGuess(letter, btnEl){
     document.getElementById('hang-status').innerHTML = '🎉 Você acertou! <b>'+hangGame.word+'</b>';
     confettiBurst(30);
     addXP(10);
+    state.hangmanWins = (state.hangmanWins||0) + 1;
+    saveState();
     document.querySelectorAll('.hang-key').forEach(b=>b.disabled=true);
     hangShowPlayAgain();
   } else if(hangGame.wrongCount >= hangGame.maxWrong){
@@ -3073,6 +3077,8 @@ function orderCheck(){
     statusEl.innerHTML = '🎉 Certinho!';
     confettiBurst(25);
     addXP(8);
+    state.orderWins = (state.orderWins||0) + 1;
+    saveState();
     document.getElementById('order-check-btn').style.display='none';
     const btn = document.createElement('button');
     btn.className = 'btn btn-primary';
@@ -3085,6 +3091,52 @@ function orderCheck(){
     statusEl.textContent = 'Quase — a ordem ainda não tá certa. Continue ajustando!';
     const answerEl = document.getElementById('order-answer');
     answerEl.classList.remove('order-shake'); void answerEl.offsetWidth; answerEl.classList.add('order-shake');
+  }
+}
+
+/* =========================================================
+   RANKING
+========================================================= */
+const RANK_CATEGORIES = [
+  { key:'xp', icon:'⭐', label:'XP' },
+  { key:'streak', icon:'🔥', label:'Sequência' },
+  { key:'xword', icon:'🧩', label:'Cruzadas' },
+  { key:'memory', icon:'🧠', label:'Memória' },
+  { key:'hangman', icon:'🎯', label:'Forca' },
+  { key:'order', icon:'📝', label:'Frases' }
+];
+let rankActiveCat = 'xp';
+
+function renderRankingPage(){
+  const tabsEl = document.getElementById('rank-tabs');
+  tabsEl.innerHTML = RANK_CATEGORIES.map(c=>
+    '<button class="rank-tab'+(c.key===rankActiveCat?' active':'')+'" data-cat="'+c.key+'">'+c.icon+' '+c.label+'</button>'
+  ).join('');
+  tabsEl.querySelectorAll('.rank-tab').forEach(btn=>{
+    btn.addEventListener('click', ()=>{ rankActiveCat = btn.dataset.cat; renderRankingPage(); });
+  });
+  rankLoadCategory(rankActiveCat);
+}
+async function rankLoadCategory(cat){
+  const contentEl = document.getElementById('rank-content');
+  contentEl.innerHTML = '<div class="intro-note">Carregando ranking...</div>';
+  try{
+    const data = await apiRequest('/leaderboard/'+cat);
+    if(!data.entries || !data.entries.length){
+      contentEl.innerHTML = '<div class="intro-note">Ainda ninguém apareceu nesse ranking. Jogue um pouco e seja o primeiro! 🚀</div>';
+      return;
+    }
+    const medals = ['🥇','🥈','🥉'];
+    contentEl.innerHTML = '<div class="rank-list">'+data.entries.map((e,i)=>
+      '<div class="rank-row'+(i<3?' rank-top3':'')+'">'+
+        '<div class="rank-pos">'+(medals[i]||(i+1))+'</div>'+
+        '<div class="rank-avatar">'+(e.avatarData?'<img src="'+e.avatarData+'" alt="">':'👤')+'</div>'+
+        '<div class="rank-name">'+e.name+'</div>'+
+        '<div class="rank-value">'+(cat==='memory' ? memFormatTime(e.value) : e.value)+'</div>'+
+      '</div>'
+    ).join('')+'</div>';
+  }catch(e){
+    contentEl.innerHTML = '<div class="intro-note">Não foi possível carregar o ranking agora. Tenta de novo mais tarde.</div>';
   }
 }
 

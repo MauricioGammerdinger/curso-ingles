@@ -9,6 +9,7 @@ const { initSchema } = require('./db');
 const { router: authRouter } = require('./routes/auth');
 const progressRouter = require('./routes/progress');
 const accountRouter = require('./routes/account');
+const leaderboardRouter = require('./routes/leaderboard');
 const attachArmGame = require('./game/armgame');
 
 const app = express();
@@ -23,6 +24,7 @@ app.get('/api/health', (req, res) => res.json({ ok: true }));
 app.use('/api/auth', authRouter);
 app.use('/api/progress', progressRouter);
 app.use('/api/account', accountRouter);
+app.use('/api/leaderboard', leaderboardRouter);
 
 app.use((err, req, res, next) => {
   console.error(err);
