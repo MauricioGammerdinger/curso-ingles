@@ -11,6 +11,7 @@ const progressRouter = require('./routes/progress');
 const accountRouter = require('./routes/account');
 const leaderboardRouter = require('./routes/leaderboard');
 const pushRouter = require('./routes/push');
+const { router: storeRouter, webhookHandler } = require('./routes/store');
 const attachArmGame = require('./game/armgame');
 const { startReminderScheduler } = require('./push-sender');
 
@@ -19,6 +20,12 @@ const PORT = process.env.PORT || 3001;
 
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '*';
 app.use(cors({ origin: ALLOWED_ORIGIN }));
+
+// O webhook do Stripe precisa do corpo "crú" (bytes originais) pra verificar a
+// assinatura — por isso é registrado ANTES do express.json() global, que senão já
+// teria transformado o corpo em objeto e quebraria a verificação.
+app.post('/api/store/webhook', express.raw({ type: 'application/json' }), webhookHandler);
+
 app.use(express.json({ limit: '400kb' })); // aumentado pra caber a foto de perfil (base64)
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
@@ -28,6 +35,7 @@ app.use('/api/progress', progressRouter);
 app.use('/api/account', accountRouter);
 app.use('/api/leaderboard', leaderboardRouter);
 app.use('/api/push', pushRouter);
+app.use('/api/store', storeRouter);
 
 app.use((err, req, res, next) => {
   console.error(err);

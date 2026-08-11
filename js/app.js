@@ -45,6 +45,7 @@ function updateAccountPill(){
   if(getAuthToken() && user){
     label.textContent = user.name || user.email || 'Conta';
     avatarSpan.innerHTML = user.avatarData ? '<img src="'+user.avatarData+'" alt="">' : '👤';
+    avatarSpan.className = state.equippedFrame ? 'avatar-frame-'+state.equippedFrame : '';
     pill.style.display = 'flex';
   } else {
     pill.style.display = 'none';
@@ -1272,7 +1273,8 @@ let state = {
   vocabMistakes:[], grammarMistakes:[], dailyXP:0, dailyXPDate:null, lastWelcomeDate:null,
   xwordCompletedDayId:null, xwordStreak:0, xwordFilledDayId:null, xwordFilledLetters:{},
   wodRevealedDate:null, reduceMotion:false, darkMode:false, memoryBestTime:null,
-  hangmanWins:0, orderWins:0
+  hangmanWins:0, orderWins:0,
+  patinhas:20, streakFreezes:0, hangmanHints:0, ownedFrames:[], equippedFrame:null
 };
 function loadState(){
   try{
@@ -1325,7 +1327,16 @@ function updateStreak(){
   else if(state.lastActive !== today){
     const last = new Date(state.lastActive); const now = new Date(today);
     const diffDays = Math.round((now-last)/86400000);
-    state.streak = (diffDays===1) ? state.streak+1 : 1;
+    if(diffDays===1){
+      state.streak = state.streak+1;
+    } else if(diffDays===2 && state.streakFreezes>0){
+      // faltou exatamente 1 dia, mas tinha um Congela-Sequência guardado — usa ele automaticamente
+      state.streakFreezes--;
+      state.streak = state.streak+1;
+      setTimeout(()=>showToast('❄️ Seu Congela-Sequência te salvou! Sequência de '+state.streak+' dias continua.'), 800);
+    } else {
+      state.streak = 1;
+    }
   }
   state.lastActive = today;
   checkBadges(); saveState();
@@ -1398,6 +1409,7 @@ function showPage(id){
   });
   if(id!=='grammar-lesson'){ curHearts = MAX_HEARTS; document.getElementById('topbar-hearts').textContent = curHearts; }
   if(id==='ranking') renderRankingPage();
+  if(id==='shop') renderShopPage();
   window.scrollTo(0,0);
 }
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>showPage(t.dataset.page)));
@@ -1429,6 +1441,8 @@ function updateStats(){
   streakEl.textContent = state.streak;
   xpEl.textContent = state.xp;
   document.getElementById('topbar-hearts').textContent = curHearts;
+  const pawsEl = document.getElementById('topbar-paws');
+  if(pawsEl) pawsEl.textContent = state.patinhas||0;
   renderBadges();
   renderDailyMission();
   renderDesktopSidePanel();
@@ -2877,9 +2891,18 @@ function renderHangmanGame(){
       '<div class="hang-clue" id="hang-clue">🔒 A dica libera quando sobrar 1 vida</div>'+
       '<div class="hang-word" id="hang-word">'+hangWordDisplay()+'</div>'+
       '<div class="hang-status" id="hang-status">&nbsp;</div>'+
+      (state.hangmanHints>0 ? '<button class="btn btn-outline" id="hang-use-hint-btn" style="width:100%;margin-bottom:10px;">💡 Usar dica da loja ('+state.hangmanHints+')</button>' : '')+
       '<div class="hang-keyboard" id="hang-keyboard"></div>'+
     '</div>';
   document.getElementById('hang-back-btn').addEventListener('click', renderHangmanSetup);
+  const hintBtn = document.getElementById('hang-use-hint-btn');
+  if(hintBtn) hintBtn.addEventListener('click', ()=>{
+    if(hangGame.finished || hangGame.clueRevealed) return;
+    state.hangmanHints--; saveState();
+    hangGame.clueRevealed = true;
+    document.getElementById('hang-clue').textContent = '💡 '+hangGame.clue;
+    hintBtn.remove();
+  });
   const kb = document.getElementById('hang-keyboard');
   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(letter=>{
     const btn = document.createElement('button');
@@ -3218,6 +3241,123 @@ async function rankLoadCategory(cat){
   }catch(e){
     contentEl.innerHTML = '<div class="intro-note">Não foi possível carregar o ranking agora. Tenta de novo mais tarde.</div>';
   }
+}
+
+/* =========================================================
+   LOJA
+========================================================= */
+const SHOP_PACKS = [
+  { id:'pack_p', icon:'🐾', amount:100, price:'R$ 4,90' },
+  { id:'pack_m', icon:'🐾', amount:300, price:'R$ 9,90' },
+  { id:'pack_g', icon:'🐾', amount:800, price:'R$ 19,90' }
+];
+const SHOP_ITEMS = [
+  { id:'streak_freeze', icon:'❄️', name:'Congela-Sequência', desc:'Protege sua sequência automaticamente se você esquecer de abrir o app 1 dia.', price:50, type:'consumable', countField:'streakFreezes' },
+  { id:'heart_refill', icon:'💛', name:'Recarga de Corações', desc:'Enche seus corações na hora.', price:25, type:'instant' },
+  { id:'hangman_hint', icon:'💡', name:'Dica Grátis (Forca)', desc:'Libera a dica da Forca sem precisar chegar em 1 vida.', price:15, type:'consumable', countField:'hangmanHints' },
+  { id:'frame_gold', icon:'🖼️', name:'Moldura Dourada', desc:'Um anel dourado ao redor da sua foto de perfil.', price:80, type:'frame', frameId:'gold' },
+  { id:'frame_rainbow', icon:'🌈', name:'Moldura Arco-Íris', desc:'Um contorno colorido ao redor da sua foto.', price:80, type:'frame', frameId:'rainbow' }
+];
+
+function renderShopPage(){
+  document.getElementById('shop-tab-buy').addEventListener('click', ()=>shopSwitchTab('buy'));
+  document.getElementById('shop-tab-items').addEventListener('click', ()=>shopSwitchTab('items'));
+  shopSwitchTab('buy');
+}
+function shopSwitchTab(tab){
+  document.getElementById('shop-tab-buy').classList.toggle('active', tab==='buy');
+  document.getElementById('shop-tab-items').classList.toggle('active', tab==='items');
+  if(tab==='buy') renderShopBuyTab(); else renderShopItemsTab();
+}
+function renderShopBuyTab(){
+  const content = document.getElementById('shop-content');
+  content.innerHTML =
+    '<div class="shop-pack-grid">'+SHOP_PACKS.map(p=>
+      '<div class="shop-pack">'+
+        '<div class="shop-pack-icon">'+p.icon+'</div>'+
+        '<div class="shop-pack-amount">'+p.amount+'</div>'+
+        '<div class="shop-pack-price">'+p.price+'</div>'+
+        '<button class="shop-buy-btn" data-pack="'+p.id+'">Comprar</button>'+
+      '</div>'
+    ).join('')+'</div>'+
+    '<div class="shop-note">💳 Pagamento com cartão em breve — estamos só ajustando os últimos detalhes.</div>';
+  content.querySelectorAll('.shop-buy-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>shopStartCheckout(btn.dataset.pack));
+  });
+}
+async function shopStartCheckout(packId){
+  if(!getAuthToken()){
+    showToast('Crie uma conta pra comprar Patinhas.');
+    return;
+  }
+  try{
+    const data = await apiRequest('/store/checkout', { method:'POST', body: JSON.stringify({ packId }) });
+    if(data && data.url) window.location.href = data.url; // redireciona pro checkout de pagamento
+  }catch(e){
+    showToast(e.message || 'Pagamentos ainda não estão disponíveis.');
+  }
+}
+function renderShopItemsTab(){
+  const content = document.getElementById('shop-content');
+  content.innerHTML = '<div class="shop-item-grid">'+SHOP_ITEMS.map(item=>{
+    let actionHtml;
+    if(item.type==='frame'){
+      const owned = state.ownedFrames.includes(item.frameId);
+      if(owned){
+        const equipped = state.equippedFrame===item.frameId;
+        actionHtml = '<button class="shop-equip-btn'+(equipped?' equipped':'')+'" data-equip="'+item.frameId+'">'+(equipped?'✓ Equipada':'Equipar')+'</button>';
+      } else {
+        actionHtml = '<button class="shop-buy-btn" data-buy="'+item.id+'">Comprar</button>';
+      }
+    } else if(item.type==='consumable'){
+      const owned = state[item.countField]||0;
+      actionHtml = '<button class="shop-buy-btn" data-buy="'+item.id+'">Comprar'+(owned>0?' (tem '+owned+')':'')+'</button>';
+    } else {
+      actionHtml = '<button class="shop-buy-btn" data-buy="'+item.id+'">Comprar</button>';
+    }
+    return '<div class="shop-item-card">'+
+      '<div class="shop-item-icon">'+item.icon+'</div>'+
+      '<div class="shop-item-name">'+item.name+'</div>'+
+      '<div class="shop-item-desc">'+item.desc+'</div>'+
+      '<div class="shop-item-price">🐾 '+item.price+'</div>'+
+      actionHtml+
+    '</div>';
+  }).join('')+'</div>';
+  content.querySelectorAll('[data-buy]').forEach(btn=>{
+    btn.addEventListener('click', ()=>shopBuyItem(btn.dataset.buy));
+  });
+  content.querySelectorAll('[data-equip]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      state.equippedFrame = (state.equippedFrame===btn.dataset.equip) ? null : btn.dataset.equip;
+      saveState();
+      updateAccountPill();
+      renderShopItemsTab();
+    });
+  });
+}
+function shopBuyItem(itemId){
+  const item = SHOP_ITEMS.find(i=>i.id===itemId);
+  if(!item) return;
+  if((state.patinhas||0) < item.price){
+    showToast('🐾 Patinhas insuficientes — compra mais na aba "Comprar Patinhas"!');
+    return;
+  }
+  state.patinhas -= item.price;
+  if(item.type==='frame'){
+    state.ownedFrames.push(item.frameId);
+    state.equippedFrame = item.frameId;
+    updateAccountPill();
+  } else if(item.type==='consumable'){
+    state[item.countField] = (state[item.countField]||0) + 1;
+  } else if(item.type==='instant' && item.id==='heart_refill'){
+    curHearts = MAX_HEARTS;
+    document.getElementById('topbar-hearts').textContent = curHearts;
+  }
+  saveState();
+  updateStats();
+  showToast('✓ '+item.name+' comprado!');
+  confettiBurst(20);
+  renderShopItemsTab();
 }
 
 /* =========================================================
