@@ -10,7 +10,9 @@ const { router: authRouter } = require('./routes/auth');
 const progressRouter = require('./routes/progress');
 const accountRouter = require('./routes/account');
 const leaderboardRouter = require('./routes/leaderboard');
+const pushRouter = require('./routes/push');
 const attachArmGame = require('./game/armgame');
+const { startReminderScheduler } = require('./push-sender');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -25,6 +27,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/progress', progressRouter);
 app.use('/api/account', accountRouter);
 app.use('/api/leaderboard', leaderboardRouter);
+app.use('/api/push', pushRouter);
 
 app.use((err, req, res, next) => {
   console.error(err);
@@ -43,6 +46,7 @@ initSchema()
   .then(() => {
     httpServer.listen(PORT, () => {
       console.log(`Servidor rodando em http://localhost:${PORT}`);
+      startReminderScheduler();
     });
   })
   .catch((err) => {

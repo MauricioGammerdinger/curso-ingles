@@ -129,7 +129,7 @@ function applyMotionPref(){
 function applyDarkMode(){
   document.body.classList.toggle('dark-mode', !!state.darkMode);
 }
-document.getElementById('open-settings-btn').addEventListener('click', ()=>{
+document.getElementById('open-settings-btn').addEventListener('click', async ()=>{
   document.getElementById('logout-overlay').classList.remove('show');
   const user = getCachedUser();
   document.getElementById('settings-name-input').value = (user && user.name) || '';
@@ -139,6 +139,7 @@ document.getElementById('open-settings-btn').addEventListener('click', ()=>{
   document.getElementById('settings-delete-confirm-area').style.display = 'none';
   document.getElementById('settings-delete-input').value = '';
   showPage('settings');
+  document.getElementById('settings-push-toggle').checked = await pushIsSubscribed();
 });
 document.getElementById('settings-back-btn').addEventListener('click', ()=>showPage('trilha'));
 
@@ -170,6 +171,85 @@ document.getElementById('settings-dark-mode').addEventListener('change', (e)=>{
   state.darkMode = e.target.checked;
   saveState();
   applyDarkMode();
+});
+
+/* ---- Notificações push ---- */
+function urlBase64ToUint8Array(base64String){
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for(let i=0;i<rawData.length;i++) outputArray[i] = rawData.charCodeAt(i);
+  return outputArray;
+}
+function pushIsSupported(){
+  return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+}
+async function pushIsSubscribed(){
+  if(!pushIsSupported()) return false;
+  try{
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    return !!sub;
+  }catch(e){ return false; }
+}
+async function pushSubscribe(){
+  const { publicKey } = await apiRequest('/push/vapid-public-key');
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(publicKey)
+  });
+  await apiRequest('/push/subscribe', { method:'POST', body: JSON.stringify({ subscription: sub.toJSON() }) });
+}
+async function pushUnsubscribe(){
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.getSubscription();
+  if(sub){
+    try{ await apiRequest('/push/unsubscribe', { method:'POST', body: JSON.stringify({ endpoint: sub.endpoint }) }); }catch(e){}
+    await sub.unsubscribe();
+  }
+}
+document.getElementById('settings-push-toggle').addEventListener('change', async (e)=>{
+  const checkbox = e.target;
+  const fb = document.getElementById('settings-push-feedback');
+  fb.className = 'produce-feedback';
+  if(!getAuthToken()){
+    checkbox.checked = false;
+    fb.className = 'produce-feedback bad';
+    fb.textContent = 'Você está sem conta — crie uma pra receber notificações.';
+    return;
+  }
+  if(!pushIsSupported()){
+    checkbox.checked = false;
+    fb.className = 'produce-feedback bad';
+    fb.textContent = 'Seu navegador não suporta notificações (no iPhone, precisa ter adicionado o app à Tela de Início antes).';
+    return;
+  }
+  checkbox.disabled = true;
+  try{
+    if(checkbox.checked){
+      const permission = await Notification.requestPermission();
+      if(permission !== 'granted'){
+        checkbox.checked = false;
+        fb.className = 'produce-feedback bad';
+        fb.textContent = 'Notificações bloqueadas — permite nas configurações do navegador se quiser ativar.';
+      } else {
+        await pushSubscribe();
+        fb.className = 'produce-feedback ok';
+        fb.textContent = '✓ Notificações ativadas!';
+      }
+    } else {
+      await pushUnsubscribe();
+      fb.textContent = 'Notificações desativadas.';
+    }
+  }catch(e){
+    checkbox.checked = !checkbox.checked;
+    fb.className = 'produce-feedback bad';
+    fb.textContent = 'Não foi possível alterar agora. Tenta de novo.';
+  }finally{
+    checkbox.disabled = false;
+  }
 });
 
 document.getElementById('settings-delete-btn').addEventListener('click', ()=>{

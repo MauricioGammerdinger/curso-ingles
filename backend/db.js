@@ -33,6 +33,17 @@ async function initSchema() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
 
+    -- Guarda a "inscrição" de push de cada aparelho (uma pessoa pode ter várias, ex:
+    -- celular + PC). endpoint é único por aparelho/navegador.
+    CREATE TABLE IF NOT EXISTS push_subscriptions (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      endpoint TEXT UNIQUE NOT NULL,
+      subscription_json JSONB NOT NULL,
+      last_notified_date TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+
     -- Migração segura: adiciona a coluna se o banco já existia de antes (sem essa coluna)
     ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_data TEXT;
   `);
