@@ -1226,9 +1226,16 @@ function positionPathCat(nodeWrapEl){
       '<path d="M 168 134 Q 192 120 216 136 L 216 146 Q 192 130 168 142 Z" fill="var(--cat-dark, #15161c)"/>'+
       '<path d="M 141 180 L 159 180 L 150 192 Z" fill="#4a2f38"/>'+
       '<path d="M 126 196 Q 150 208 174 196" stroke="var(--cat-light, #f4f4f2)" stroke-width="5" fill="none" stroke-linecap="round"/>'+
+      '<g id="cat-helmet" style="display:none;">'+
+        '<path d="M 52 122 Q 52 10 150 10 Q 248 10 248 122 Z" fill="#9098A3" stroke="#5B6470" stroke-width="4"/>'+
+        '<path d="M 58 116 Q 150 96 242 116" stroke="#5B6470" stroke-width="4" fill="none" stroke-linecap="round"/>'+
+        '<path d="M 150 2 Q 165 22 150 48 Q 135 22 150 2 Z" fill="#B33A3A" stroke="#8A2A2A" stroke-width="1.5"/>'+
+        '<rect x="141" y="112" width="18" height="66" rx="6" fill="#9098A3" stroke="#5B6470" stroke-width="3"/>'+
+      '</g>'+
       '</svg>';
     container.appendChild(avatar);
   }
+  applyCatHelmet(avatar);
   const containerRect = container.getBoundingClientRect();
   const nodeRect = nodeWrapEl.getBoundingClientRect();
   const targetLeft = (nodeRect.left - containerRect.left) + (nodeRect.width/2) - 29;
@@ -3253,17 +3260,26 @@ const SHOP_PACKS = [
   { id:'pack_g', icon:'🐾', amount:800, price:'R$ 19,90' }
 ];
 const CAT_SKINS = {
-  default: { name:'Preto (padrão)', dark:'#15161c', light:'#f4f4f2', eye:'#8fd44a' },
-  ginger:  { name:'Gengibre', dark:'#E8823C', light:'#FFEBD6', eye:'#5B8C3A' },
-  white:   { name:'Branco', dark:'#F4F4F2', light:'#FFFFFF', eye:'#4A9FD8' },
-  tabby:   { name:'Rajado', dark:'#8A8D91', light:'#E7E7E7', eye:'#C9A227' }
+  default:  { name:'Preto (padrão)', dark:'#15161c', light:'#f4f4f2', eye:'#8fd44a' },
+  ginger:   { name:'Gengibre', dark:'#E8823C', light:'#FFEBD6', eye:'#5B8C3A' },
+  white:    { name:'Branco', dark:'#F4F4F2', light:'#FFFFFF', eye:'#4A9FD8' },
+  tabby:    { name:'Rajado', dark:'#8A8D91', light:'#E7E7E7', eye:'#C9A227' },
+  medieval: { name:'Cavaleiro Medieval', dark:'#15161c', light:'#f4f4f2', eye:'#8fd44a', helmet:true }
 };
+function applyCatHelmet(avatarEl){
+  const helmet = avatarEl && avatarEl.querySelector('#cat-helmet');
+  if(!helmet) return;
+  const skinId = state.equippedCatSkin || 'default';
+  const skin = CAT_SKINS[skinId] || CAT_SKINS.default;
+  helmet.style.display = skin.helmet ? 'block' : 'none';
+}
 function applyCatSkin(){
   const skinId = state.equippedCatSkin || 'default';
   const skin = CAT_SKINS[skinId] || CAT_SKINS.default;
   document.documentElement.style.setProperty('--cat-dark', skin.dark);
   document.documentElement.style.setProperty('--cat-light', skin.light);
   document.documentElement.style.setProperty('--cat-eye', skin.eye);
+  applyCatHelmet(document.getElementById('path-cat-avatar'));
 }
 
 const SHOP_ITEMS = [
@@ -3274,7 +3290,8 @@ const SHOP_ITEMS = [
   { id:'frame_rainbow', icon:'🌈', name:'Moldura Arco-Íris', desc:'Um contorno colorido ao redor da sua foto.', price:80, type:'frame', frameId:'rainbow' },
   { id:'skin_ginger', icon:'🐈', name:'Gato Gengibre', desc:'Troca a cor do gatinho que segue você na trilha.', price:60, type:'catskin', skinId:'ginger' },
   { id:'skin_white', icon:'🐈', name:'Gato Branco', desc:'Troca a cor do gatinho que segue você na trilha.', price:60, type:'catskin', skinId:'white' },
-  { id:'skin_tabby', icon:'🐈', name:'Gato Rajado', desc:'Troca a cor do gatinho que segue você na trilha.', price:60, type:'catskin', skinId:'tabby' }
+  { id:'skin_tabby', icon:'🐈', name:'Gato Rajado', desc:'Troca a cor do gatinho que segue você na trilha.', price:60, type:'catskin', skinId:'tabby' },
+  { id:'skin_medieval', icon:'⚔️', name:'Gato Cavaleiro', desc:'Um elmo medieval de verdade pro gatinho da trilha.', price:100, type:'catskin', skinId:'medieval' }
 ];
 
 function renderShopPage(){
