@@ -1191,6 +1191,54 @@ function renderPath(){
   });
   positionPathCat(currentNodeWrapEl);
 }
+/* Desenho do gato reutilizável — usado tanto no avatar da trilha (com CSS var, pra
+   trocar de skin ao vivo) quanto na pré-visualização das skins dentro da loja (com
+   cores fixas, uma pra cada skin, pra dar pra ver a diferença antes de comprar). */
+function buildCatSvgInner(dark, light, eye, showHelmet){
+  let s =
+    '<path class="tail" d="M225 300 C 278 288, 286 205, 248 158 C 272 210, 262 268, 218 278 Z" fill="'+dark+'"/>'+
+    '<ellipse cx="98" cy="335" rx="24" ry="16" fill="'+dark+'"/>'+
+    '<ellipse cx="202" cy="335" rx="24" ry="16" fill="'+dark+'"/>'+
+    '<ellipse cx="150" cy="270" rx="98" ry="88" fill="'+dark+'"/>'+
+    '<ellipse cx="150" cy="298" rx="50" ry="60" fill="'+light+'"/>'+
+    '<rect x="112" y="330" width="26" height="38" rx="13" fill="'+light+'"/>'+
+    '<rect x="162" y="330" width="26" height="38" rx="13" fill="'+light+'"/>'+
+    '<path d="M 80 110 L 62 20 L 135 90 Z" fill="'+dark+'"/>'+
+    '<path d="M 88 98 L 78 46 L 122 86 Z" fill="#4a2f38"/>'+
+    '<path d="M 220 110 L 238 20 L 165 90 Z" fill="'+dark+'"/>'+
+    '<path d="M 212 98 L 222 46 L 178 86 Z" fill="#4a2f38"/>'+
+    '<circle cx="150" cy="150" r="92" fill="'+dark+'"/>'+
+    '<path d="M 92 214 Q 150 242 208 214 L 200 234 Q 150 252 100 234 Z" fill="var(--mustard, #FFC800)"/>'+
+    '<ellipse cx="108" cy="144" rx="23" ry="17" fill="'+light+'"/>'+
+    '<ellipse cx="192" cy="144" rx="23" ry="17" fill="'+light+'"/>'+
+    '<circle cx="114" cy="144" r="13" fill="'+eye+'"/>'+
+    '<circle cx="186" cy="144" r="13" fill="'+eye+'"/>'+
+    '<ellipse cx="114" cy="144" rx="4" ry="12.5" fill="#111"/>'+
+    '<ellipse cx="186" cy="144" rx="4" ry="12.5" fill="#111"/>'+
+    '<circle cx="117" cy="139" r="3" fill="#fff"/>'+
+    '<circle cx="189" cy="139" r="3" fill="#fff"/>'+
+    '<path d="M 84 136 Q 108 120 132 134 L 132 142 Q 108 130 84 146 Z" fill="'+dark+'"/>'+
+    '<path d="M 168 134 Q 192 120 216 136 L 216 146 Q 192 130 168 142 Z" fill="'+dark+'"/>'+
+    '<path d="M 141 180 L 159 180 L 150 192 Z" fill="#4a2f38"/>'+
+    '<path d="M 126 196 Q 150 208 174 196" stroke="'+light+'" stroke-width="5" fill="none" stroke-linecap="round"/>';
+  if(showHelmet===true || showHelmet==='force'){
+    s += '<g id="cat-helmet" style="'+(showHelmet==='force'?'':'display:none;')+'">'+
+      '<path d="M 52 122 Q 52 10 150 10 Q 248 10 248 122 Z" fill="#9098A3" stroke="#5B6470" stroke-width="4"/>'+
+      '<path d="M 58 116 Q 150 96 242 116" stroke="#5B6470" stroke-width="4" fill="none" stroke-linecap="round"/>'+
+      '<path d="M 150 2 Q 165 22 150 48 Q 135 22 150 2 Z" fill="#B33A3A" stroke="#8A2A2A" stroke-width="1.5"/>'+
+      '<rect x="141" y="112" width="18" height="66" rx="6" fill="#9098A3" stroke="#5B6470" stroke-width="3"/>'+
+    '</g>';
+  } else {
+    s += '<g id="cat-helmet" style="display:none;"></g>';
+  }
+  return s;
+}
+function catSkinPreviewSvg(skinId){
+  const skin = CAT_SKINS[skinId] || CAT_SKINS.default;
+  return '<svg viewBox="0 0 300 380" xmlns="http://www.w3.org/2000/svg">'+
+    buildCatSvgInner(skin.dark, skin.light, skin.eye, skin.helmet ? 'force' : false)+
+  '</svg>';
+}
 function positionPathCat(nodeWrapEl){
   const container = document.getElementById('path-container');
   if(!container || !nodeWrapEl) return;
@@ -1201,37 +1249,7 @@ function positionPathCat(nodeWrapEl){
     avatar.id = 'path-cat-avatar';
     avatar.className = 'path-cat-avatar';
     avatar.innerHTML = '<svg viewBox="0 0 300 380" xmlns="http://www.w3.org/2000/svg">'+
-      '<path class="tail" d="M225 300 C 278 288, 286 205, 248 158 C 272 210, 262 268, 218 278 Z" fill="var(--cat-dark, #15161c)"/>'+
-      '<ellipse cx="98" cy="335" rx="24" ry="16" fill="var(--cat-dark, #15161c)"/>'+
-      '<ellipse cx="202" cy="335" rx="24" ry="16" fill="var(--cat-dark, #15161c)"/>'+
-      '<ellipse cx="150" cy="270" rx="98" ry="88" fill="var(--cat-dark, #15161c)"/>'+
-      '<ellipse cx="150" cy="298" rx="50" ry="60" fill="var(--cat-light, #f4f4f2)"/>'+
-      '<rect x="112" y="330" width="26" height="38" rx="13" fill="var(--cat-light, #f4f4f2)"/>'+
-      '<rect x="162" y="330" width="26" height="38" rx="13" fill="var(--cat-light, #f4f4f2)"/>'+
-      '<path d="M 80 110 L 62 20 L 135 90 Z" fill="var(--cat-dark, #15161c)"/>'+
-      '<path d="M 88 98 L 78 46 L 122 86 Z" fill="#4a2f38"/>'+
-      '<path d="M 220 110 L 238 20 L 165 90 Z" fill="var(--cat-dark, #15161c)"/>'+
-      '<path d="M 212 98 L 222 46 L 178 86 Z" fill="#4a2f38"/>'+
-      '<circle cx="150" cy="150" r="92" fill="var(--cat-dark, #15161c)"/>'+
-      '<path d="M 92 214 Q 150 242 208 214 L 200 234 Q 150 252 100 234 Z" fill="var(--mustard, #FFC800)"/>'+
-      '<ellipse cx="108" cy="144" rx="23" ry="17" fill="var(--cat-light, #f4f4f2)"/>'+
-      '<ellipse cx="192" cy="144" rx="23" ry="17" fill="var(--cat-light, #f4f4f2)"/>'+
-      '<circle cx="114" cy="144" r="13" fill="var(--cat-eye, #8fd44a)"/>'+
-      '<circle cx="186" cy="144" r="13" fill="var(--cat-eye, #8fd44a)"/>'+
-      '<ellipse cx="114" cy="144" rx="4" ry="12.5" fill="#111"/>'+
-      '<ellipse cx="186" cy="144" rx="4" ry="12.5" fill="#111"/>'+
-      '<circle cx="117" cy="139" r="3" fill="#fff"/>'+
-      '<circle cx="189" cy="139" r="3" fill="#fff"/>'+
-      '<path d="M 84 136 Q 108 120 132 134 L 132 142 Q 108 130 84 146 Z" fill="var(--cat-dark, #15161c)"/>'+
-      '<path d="M 168 134 Q 192 120 216 136 L 216 146 Q 192 130 168 142 Z" fill="var(--cat-dark, #15161c)"/>'+
-      '<path d="M 141 180 L 159 180 L 150 192 Z" fill="#4a2f38"/>'+
-      '<path d="M 126 196 Q 150 208 174 196" stroke="var(--cat-light, #f4f4f2)" stroke-width="5" fill="none" stroke-linecap="round"/>'+
-      '<g id="cat-helmet" style="display:none;">'+
-        '<path d="M 52 122 Q 52 10 150 10 Q 248 10 248 122 Z" fill="#9098A3" stroke="#5B6470" stroke-width="4"/>'+
-        '<path d="M 58 116 Q 150 96 242 116" stroke="#5B6470" stroke-width="4" fill="none" stroke-linecap="round"/>'+
-        '<path d="M 150 2 Q 165 22 150 48 Q 135 22 150 2 Z" fill="#B33A3A" stroke="#8A2A2A" stroke-width="1.5"/>'+
-        '<rect x="141" y="112" width="18" height="66" rx="6" fill="#9098A3" stroke="#5B6470" stroke-width="3"/>'+
-      '</g>'+
+      buildCatSvgInner('var(--cat-dark, #15161c)', 'var(--cat-light, #f4f4f2)', 'var(--cat-eye, #8fd44a)', true)+
       '</svg>';
     container.appendChild(avatar);
   }
@@ -3359,7 +3377,9 @@ function renderShopItemsTab(){
       actionHtml = '<button class="shop-buy-btn" data-buy="'+item.id+'">Comprar</button>';
     }
     return '<div class="shop-item-card">'+
-      '<div class="shop-item-icon">'+item.icon+'</div>'+
+      (item.type==='catskin'
+        ? '<div class="shop-item-icon shop-catskin-preview">'+catSkinPreviewSvg(item.skinId)+'</div>'
+        : '<div class="shop-item-icon">'+item.icon+'</div>')+
       '<div class="shop-item-name">'+item.name+'</div>'+
       '<div class="shop-item-desc">'+item.desc+'</div>'+
       '<div class="shop-item-price">🐾 '+item.price+'</div>'+
